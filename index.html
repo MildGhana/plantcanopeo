@@ -133,14 +133,59 @@ function loadFile(file){
 }
 function colorName(r,g,b){
  const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
- if(max<38)return 'Black';
- if(max-min<18){if(max<85)return 'Dark Gray';if(max<170)return 'Gray';if(max<225)return 'Light Gray';return 'White';}
- const v=max/255,s=max===0?0:delta/max;let h=0;
- if(delta){if(max===r)h=60*(((g-b)/delta)%6);else if(max===g)h=60*((b-r)/delta+2);else h=60*((r-g)/delta+4);if(h<0)h+=360;}
- let name;
- if(h<15||h>=345)name='Red';else if(h<35)name='Orange';else if(h<48)name='Ochre';else if(h<68)name='Yellow';else if(h<165)name='Green';else if(h<195)name='Cyan';else if(h<255)name='Blue';else if(h<285)name='Purple';else if(h<330)name='Magenta';else name='Pink';
- if(s<0.28)name=(v<0.45?'Dark ':'Light ')+name;
- else if(v<0.35)name='Dark '+name;else if(v>0.82&&s<0.55)name='Pale '+name;
+ const lightness=(max+min)/510;
+ const lPct=Math.round(lightness*100);
+ const v=max/255;
+ let h=0;
+ if(delta){
+   if(max===r)h=60*(((g-b)/delta)%6);
+   else if(max===g)h=60*((b-r)/delta+2);
+   else h=60*((r-g)/delta+4);
+   if(h<0)h+=360;
+ }
+ const s=delta===0?0:delta/(1-Math.abs(2*lightness-1));
+ const satPct=Math.round((Number.isFinite(s)?s:0)*100);
+ let name='';
+ // Separate near-neutral shades by lightness and by their subtle RGB tint.
+ if(delta<22){
+   let tone='Neutral';
+   const warm=r-b, green=g-Math.max(r,b), cool=b-r;
+   if(warm>=9)tone='Warm';
+   else if(cool>=9)tone='Cool';
+   else if(g>=r+7 && g>=b+7)tone='Green-Tinted';
+   else if(r>=g+7 && b>=g+7)tone='Violet-Tinted';
+   else if(r>=g+9 && g>=b+9)tone='Olive-Tinted';
+   let level;
+   if(max<25)level='Black';
+   else if(lPct<18)level='Very Dark Gray';
+   else if(lPct<32)level='Dark Gray';
+   else if(lPct<45)level='Medium-Dark Gray';
+   else if(lPct<58)level='Medium Gray';
+   else if(lPct<72)level='Light Gray';
+   else if(lPct<88)level='Very Light Gray';
+   else level='Off-White';
+   name=(level==='Black'?'Black':tone==='Neutral'?level:`${tone} ${level}`)+` · L${String(lPct).padStart(2,'0')}`;
+ } else {
+   if(h<15||h>=345)name='Red';
+   else if(h<28)name='Red-Orange';
+   else if(h<42)name='Orange';
+   else if(h<52)name='Ochre';
+   else if(h<68)name='Yellow';
+   else if(h<82)name='Yellow-Green';
+   else if(h<105)name='Lime Green';
+   else if(h<145)name='Green';
+   else if(h<165)name='Blue-Green';
+   else if(h<195)name='Cyan';
+   else if(h<220)name='Sky Blue';
+   else if(h<255)name='Blue';
+   else if(h<275)name='Blue-Violet';
+   else if(h<295)name='Purple';
+   else if(h<325)name='Magenta';
+   else if(h<345)name='Pink';
+   const valueLabel=v<0.25?'Very Dark':v<0.42?'Dark':v<0.68?'Medium':v<0.86?'Light':'Very Light';
+   const saturationLabel=satPct<25?'Muted':satPct<50?'Soft':satPct<75?'Vivid':'Highly Saturated';
+   name=`${valueLabel} ${name} · H${Math.round(h)} S${satPct}% L${lPct}% (${saturationLabel})`;
+ }
  return name;
 }
 
