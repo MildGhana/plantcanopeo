@@ -17,6 +17,7 @@ button.primary{background:#315be8;color:white;border-color:#315be8}.camera-btn{b
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.stat{background:#f6f8fc;border-radius:12px;padding:14px}.stat small{display:block;color:#687386}.stat strong{font-size:22px}
 .bar{height:22px;display:flex;overflow:hidden;border-radius:8px;margin:14px 0 20px;background:#eee}.seg{height:100%;min-width:1px}
 .colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.plant-color-intro{margin:8px 0 12px;color:#687386;font-size:13px;line-height:1.55}
 .color{border:1px solid #e4e8ef;border-radius:12px;padding:12px;display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center}
 .swatch{height:48px;width:48px;border-radius:9px;border:1px solid #0001}.hex{font-weight:700;font-family:ui-monospace,monospace}.rgb{font-size:12px;color:#687386;margin-top:4px}.pct{font-size:18px;font-weight:700}.color button{grid-column:1/-1;padding:7px}
 .note{font-size:13px;color:#687386}.hidden{display:none}
@@ -56,7 +57,7 @@ button.primary{background:#315be8;color:white;border-color:#315be8}.camera-btn{b
 <img id="preview" class="preview hidden" alt="선택한 이미지 미리보기">
 <p class="note">참고: 사진에는 미세한 색조가 매우 많습니다. 결과는 비슷한 픽셀 색상을 묶은 대표 색상 그룹이며, 각 비율은 투명 픽셀을 제외한 이미지 픽셀 기준입니다.</p>
 </section>
-<section id="canopyResults" class="panel hidden"><h2>식물 영역 식별 및 피복률 결과</h2><div class="stats"><div class="stat"><small>식물 피복률 추정치</small><strong id="canopyPct">—</strong></div><div class="stat"><small>식물로 분류된 픽셀</small><strong id="plantPixels">—</strong></div><div class="stat"><small>분석 대상 픽셀</small><strong id="allPixels">—</strong></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px"><div><h3>식물 영역 표시</h3><canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef"></canvas><p class="note">밝은 초록색으로 덧칠된 부분이 식물로 판별된 영역입니다. 민감도 7단계를 바꾸어 결과를 비교할 수 있습니다. 어두운 사진은 높음 또는 매우 높음부터 확인해 보세요.</p></div><div><h3>원본 사진</h3><img id="canopyOriginal" alt="분석 원본" style="width:100%;border-radius:12px;border:1px solid #e2e7ef"></div></div><p class="note">이 값은 사진 속 식물 픽셀 비율의 자동 추정치이며, 현장 조사 기준의 정밀한 캐노피 측정값을 보장하지 않습니다. 나무잎이 갈색이거나 매우 어두운 경우, 녹색 배경 물체가 있는 경우 오분류될 수 있습니다.</p></section>
+<section id="canopyResults" class="panel hidden"><h2>식물 영역 식별 및 피복률 결과</h2><div class="stats"><div class="stat"><small>식물 피복률 추정치</small><strong id="canopyPct">—</strong></div><div class="stat"><small>식물로 분류된 픽셀</small><strong id="plantPixels">—</strong></div><div class="stat"><small>분석 대상 픽셀</small><strong id="allPixels">—</strong></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px"><div><h3>식물 영역 표시</h3><canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef"></canvas><p class="note">밝은 초록색으로 덧칠된 부분이 식물로 판별된 영역입니다. 민감도 7단계를 바꾸어 결과를 비교할 수 있습니다. 어두운 사진은 높음 또는 매우 높음부터 확인해 보세요.</p></div><div><h3>원본 사진</h3><img id="canopyOriginal" alt="분석 원본" style="width:100%;border-radius:12px;border:1px solid #e2e7ef"></div></div><div style="margin-top:20px;border-top:1px solid #e2e7ef;padding-top:16px"><h3>식물로 판별된 영역의 색상 구성</h3><p class="plant-color-intro">아래 색상 비율은 사진 전체가 아니라, 식물로 판별된 픽셀만을 기준으로 계산합니다. 색상이 비슷한 픽셀은 대표 색상 그룹으로 묶으며, 위의 ‘표시할 색상 수’ 설정에 따라 비율이 높은 색상부터 표시합니다. 따라서 표시된 색상 비율의 합계는 100%보다 작을 수 있습니다.</p><div class="stats"><div class="stat"><small>분류된 식물 영역 색상 그룹</small><strong id="plantColorGroups">—</strong></div><div class="stat"><small>가장 많은 대표 색상</small><strong id="plantDominantColor" style="font-size:17px">—</strong></div></div><div class="bar" id="plantColorBar"></div><div class="colors" id="plantColors"></div><button id="downloadPlantColors" type="button" style="margin-top:12px">식물 영역 색상 CSV 저장</button></div><p class="note">이 값은 식물 판정 마스크 안에 실제로 들어 있는 사진 색상의 분포입니다. 색상 그룹은 잎의 종류나 식물 종을 식별하는 결과가 아니며, 그림자와 조명에 따라 달라질 수 있습니다.</p><p class="note">이 값은 사진 속 식물 픽셀 비율의 자동 추정치이며, 현장 조사 기준의 정밀한 캐노피 측정값을 보장하지 않습니다. 나무잎이 갈색이거나 매우 어두운 경우, 녹색 배경 물체가 있는 경우 오분류될 수 있습니다.</p></section>
 <section id="results" class="hidden">
 <div class="panel"><h2>분석 요약</h2><div class="stats">
 <div class="stat"><small>이미지 크기</small><strong id="dimensions">—</strong></div>
@@ -68,7 +69,7 @@ button.primary{background:#315be8;color:white;border-color:#315be8}.camera-btn{b
 </main>
 <script>
 const $=id=>document.getElementById(id);
-let image=null, rows=[], filename='palette', cameraStream=null;
+let image=null, rows=[], plantColorRows=[], filename='palette', cameraStream=null;
 $('openCamera').addEventListener('click',openCamera);
 $('closeCamera').addEventListener('click',closeCamera);
 $('takePhoto').addEventListener('click',takePhoto);
@@ -123,6 +124,7 @@ $('reanalyze').addEventListener('click',analyzeCanopy);
 $('sensitivity').addEventListener('change',()=>{if(image)analyzeCanopy()});
 $('count').addEventListener('change',()=>{if(image)analyze()});
 $('download').addEventListener('click',downloadCSV);
+$('downloadPlantColors').addEventListener('click',downloadPlantColorsCSV);
 function loadFile(file){
  if(!file||!file.type.startsWith('image/'))return;
  filename=(file.name||'palette').replace(/\.[^.]+$/,'');
@@ -235,7 +237,7 @@ function analyzeCanopy(){
    high:{hueMin:23,hueMax:165,minSat:0.055,exg:0.008,darkBoost:0.39},
    veryhigh:{hueMin:18,hueMax:173,minSat:0.035,exg:-0.004,darkBoost:0.45}
  }[sens] || {hueMin:30,hueMax:152,minSat:0.095,exg:0.030,darkBoost:0.28};
- let count=0,total=0;
+ let count=0,total=0;const plantBins=new Map();
  const mask=$('maskCanvas');mask.width=w;mask.height=h;const mx=mask.getContext('2d');const out=mx.createImageData(w,h);
  for(let i=0;i<d.length;i+=4){
    const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255,a=d[i+3];if(a<10)continue;total++;
@@ -250,11 +252,32 @@ function analyzeCanopy(){
    const dimAdjustment=Math.max(0,0.30-brightness)*cfg.darkBoost;
    const exgLimit=cfg.exg*darkFactor-dimAdjustment;
    const isPlant=hue>=cfg.hueMin && hue<=cfg.hueMax && saturation>=cfg.minSat && exg>=exgLimit;
-   if(isPlant){count++;out.data[i]=28;out.data[i+1]=235;out.data[i+2]=100;out.data[i+3]=230;}
+   if(isPlant){
+     count++;
+     // Group colors from plant-classified pixels only, using the same 3-bit RGB buckets as the whole-image palette.
+     const qr=Math.min(7,Math.floor(d[i]/32)),qg=Math.min(7,Math.floor(d[i+1]/32)),qb=Math.min(7,Math.floor(d[i+2]/32));
+     const key=(qr<<6)|(qg<<3)|qb;let v=plantBins.get(key);
+     if(!v){v={n:0,r:0,g:0,b:0};plantBins.set(key,v)}
+     v.n++;v.r+=d[i];v.g+=d[i+1];v.b+=d[i+2];
+     out.data[i]=28;out.data[i+1]=235;out.data[i+2]=100;out.data[i+3]=230;
+   }
    else {out.data[i]=d[i];out.data[i+1]=d[i+1];out.data[i+2]=d[i+2];out.data[i+3]=Math.round(a*0.82);}
  }
  mx.putImageData(out,0,0);$('canopyOriginal').src=$('preview').src;
- $('canopyPct').textContent=(total?count/total*100:0).toFixed(2)+'%';$('plantPixels').textContent=count.toLocaleString();$('allPixels').textContent=total.toLocaleString();$('canopyResults').classList.remove('hidden');
+ $('canopyPct').textContent=(total?count/total*100:0).toFixed(2)+'%';$('plantPixels').textContent=count.toLocaleString();$('allPixels').textContent=total.toLocaleString();
+ plantColorRows=[...plantBins.values()].map(v=>({n:v.n,r:Math.round(v.r/v.n),g:Math.round(v.g/v.n),b:Math.round(v.b/v.n)})).sort((a,b)=>b.n-a.n).slice(0,Number($('count').value));
+ plantColorRows=plantColorRows.map(v=>({...v,hex:'#'+[v.r,v.g,v.b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase(),pct:count?v.n/count*100:0,wholePct:total?v.n/total*100:0}));
+ $('plantColorGroups').textContent=plantColorRows.length.toLocaleString();
+ $('plantDominantColor').textContent=plantColorRows.length?plantColorRows[0].hex+' · '+plantColorRows[0].pct.toFixed(2)+'%':'식물 픽셀 없음';
+ $('plantColorBar').innerHTML=plantColorRows.map(r=>`<div class="seg" title="${r.hex} · 식물 영역 ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
+ $('plantColors').innerHTML=plantColorRows.map((r,i)=>`<div class="color"><div class="swatch" style="background:${r.hex}"></div><div><div class="hex">${i+1}. ${colorName(r.r,r.g,r.b)}</div><div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div><div class="rgb">사진 전체의 ${r.wholePct.toFixed(2)}%</div></div><div class="pct">${r.pct.toFixed(2)}%</div></div>`).join('');
+ if(!plantColorRows.length)$('plantColors').innerHTML='<p class="note">식물로 판별된 픽셀이 없습니다. 민감도를 높여 다시 분석해 보세요.</p>';
+ $('canopyResults').classList.remove('hidden');
+}
+function downloadPlantColorsCSV(){
+ const csv=[['순위','HEX','R','G','B','픽셀 수','식물 영역 내 비율(%)','사진 전체 대비 비율(%)'],...plantColorRows.map((r,i)=>[i+1,r.hex,r.r,r.g,r.b,r.n,r.pct.toFixed(4),r.wholePct.toFixed(4)])].map(row=>row.join(',')).join('\r\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=(filename||'palette')+'_식물영역_색상분석.csv';a.click();URL.revokeObjectURL(url);
 }
 function downloadCSV(){
  const csv=[['순위','HEX','R','G','B','픽셀 수(대표 그룹)','비율(%)'],...rows.map((r,i)=>[i+1,r.hex,r.r,r.g,r.b,Math.round(r.n),r.pct.toFixed(4)])].map(row=>row.join(',')).join('\r\n');
