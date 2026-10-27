@@ -25,6 +25,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .slider-labels{display:flex;justify-content:space-between;font-size:11px;color:#687386;margin-top:6px}
 .foliage-toggle{margin-top:12px;display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer}
 .foliage-toggle input{width:18px;height:18px;cursor:pointer}
+.brush-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:10px;background:#f1f4f9;border-radius:10px}
+.brush-btn.active{background:#315be8;color:white;border-color:#315be8}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 .stat{background:#f6f8fc;border-radius:12px;padding:14px}.stat small{display:block;color:#687386}.stat strong{font-size:22px}
 .bar{height:22px;display:flex;overflow:hidden;border-radius:8px;margin:14px 0 20px;background:#eee}.seg{height:100%;min-width:1px}
@@ -40,8 +42,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 <body>
 <main class="app">
 <header class="head">
-  <h1>식물 캐노피 피복률 분석기</h1>
-  <div class="muted">사진에서 식물 및 단풍 영역으로 분류된 픽셀의 비율을 계산합니다. 이미지는 브라우저 안에서 안전하게 처리됩니다.</div>
+  <h1>식물 및 단풍 캐노피 피복률 분석기</h1>
+  <div class="muted">사진에서 식물 및 단풍 영역의 피복률을 계산하고 수동 브러시로 정밀하게 수정할 수 있습니다.</div>
 </header>
 
 <section class="panel">
@@ -49,7 +51,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
   <input id="file" type="file" accept="image/*">
   <div style="font-size:34px">＋</div>
   <strong>이미지를 선택하거나 이곳에 끌어다 놓으세요</strong>
-  <div class="muted">PNG, JPG, WebP, GIF 등 브라우저에서 열 수 있는 이미지</div>
+  <div class="muted">PNG, JPG, WebP, GIF 등 이미지 파일</div>
 </label>
 
 <div class="controls">
@@ -70,8 +72,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
     <label>표시할 색상 수
       <select id="count"><option>5</option><option selected>8</option><option>10</option><option>12</option><option>16</option><option>20</option></select>
     </label>
-    <button class="primary" id="analyze" disabled>식물/단풍 영역 식별 및 비율 계산</button>
-    <button id="download" disabled>색상 분석 CSV 저장</button>
+    <button class="primary" id="analyze" disabled>식물/단풍 영역 식별 및 분석</button>
+    <button id="download" disabled>전체 색상 CSV</button>
   </div>
 </div>
 </section>
@@ -84,7 +86,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
     <div class="stat"><small>분석 대상 픽셀</small><strong id="allPixels">—</strong></div>
   </div>
 
-  <!-- 원본 사진을 왼쪽, 분석 영역 표시를 오른쪽에 배치 -->
   <div class="image-grid">
     <div>
       <h3>원본 사진</h3>
@@ -92,13 +93,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
       <p class="note" style="margin-top:8px">업로드하거나 촬영한 원본 이미지입니다.</p>
     </div>
     <div>
-      <h3>영역 표시 (마스크)</h3>
-      <canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block"></canvas>
-      <p class="note" style="margin-top:8px">초록색/단풍 영역으로 판별된 부분이 덧칠된 영역입니다.</p>
+      <h3>영역 표시 및 수동 편집 마스크</h3>
+      <canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block;cursor:crosshair"></canvas>
+      
+      <!-- 수동 브러시 툴바 -->
+      <div class="brush-toolbar">
+        <button id="brushAdd" class="brush-btn active" type="button">➕ 영역 추가</button>
+        <button id="brushRemove" class="brush-btn" type="button">➖ 영역 제거</button>
+        <button id="brushReset" type="button">초기화</button>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+          <small>브러시 크기</small>
+          <input id="brushSize" type="range" min="5" max="50" value="20" style="width:90px">
+        </div>
+      </div>
+      <p class="note" style="margin-top:6px">마우스나 터치로 마스크 위를 칠해 영역을 수동으로 추가하거나 지울 수 있습니다.</p>
     </div>
   </div>
 
-  <!-- 민감도 조절 바 (20단계) 및 단풍 모드 체크박스 -->
   <div class="slider-container">
     <div class="slider-header">
       <span>판별 민감도 조절 (20단계)</span>
@@ -149,6 +160,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 <script>
 const $=id=>document.getElementById(id);
 let image=null, rows=[], plantColorRows=[], filename='palette', cameraStream=null, currentObjectUrl=null;
+let origImgData=null, currentMaskData=null, isDrawing=false, brushMode='add', originalPixelState=null;
 
 $('openCamera').addEventListener('click',openCamera);
 $('closeCamera').addEventListener('click',()=>closeCamera(true));
@@ -214,6 +226,10 @@ $('foliageMode').addEventListener('change',()=>{if(image)analyzeCanopy()});
 $('count').addEventListener('change',()=>{if(image)analyze()});
 $('download').addEventListener('click',downloadCSV);
 $('downloadPlantColors').addEventListener('click',downloadPlantColorsCSV);
+
+$('brushAdd').addEventListener('click',()=>{brushMode='add';$('brushAdd').classList.add('active');$('brushRemove').classList.remove('active')});
+$('brushRemove').addEventListener('click',()=>{brushMode='remove';$('brushRemove').classList.add('active');$('brushAdd').classList.remove('active')});
+$('brushReset').addEventListener('click',()=>{if(image)analyzeCanopy()});
 
 function updateSensitivityLabel(val){
   const v = parseInt(val);
@@ -299,9 +315,9 @@ function analyze(){
 
 function analyzeCanopy(){
   if(!image)return;
-  const w=Math.min(1000,image.naturalWidth), scale=w/image.naturalWidth, h=Math.max(1,Math.round(image.naturalHeight*scale));
+  const w=Math.min(800,image.naturalWidth), scale=w/image.naturalWidth, h=Math.max(1,Math.round(image.naturalHeight*scale));
   const c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(image,0,0,w,h);
-  const im=cx.getImageData(0,0,w,h),d=im.data;
+  origImgData=cx.getImageData(0,0,w,h);
   
   const sLv = parseInt($('sensitivityRange').value);
   const isFoliage = $('foliageMode').checked;
@@ -319,20 +335,20 @@ function analyzeCanopy(){
   }
   const cfg = profiles[sLv] || profiles[10];
 
-  let count=0,total=0;const plantBins=new Map();
-  const mask=$('maskCanvas');mask.width=w;mask.height=h;const mx=mask.getContext('2d');const out=mx.createImageData(w,h);
-  
-  for(let i=0;i<d.length;i+=4){
-    const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255,a=d[i+3];if(a<10)continue;total++;
-    const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+  const d = origImgData.data;
+  currentMaskData = new Uint8Array(w * h); // 1: 식물, 0: 배경
+  originalPixelState = new Uint8Array(w * h);
+
+  for(let i=0; i<d.length; i+=4){
+    const idx = i/4;
+    const r=d[i]/255, g=d[i+1]/255, b=d[i+2]/255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b), delta=max-min;
     let hue=0;if(delta>0){if(max===r)hue=60*(((g-b)/delta)%6);else if(max===g)hue=60*((b-r)/delta+2);else hue=60*((r-g)/delta+4);if(hue<0)hue+=360;}
     const saturation=max===0?0:delta/max, exg=2*g-r-b, brightness=(r+g+b)/3;
     const darkFactor=Math.max(0.45,Math.min(1.15,brightness/0.42)), dimAdjustment=Math.max(0,0.30-brightness)*cfg.darkBoost;
     
-    // 기본 녹색 판별 조건
     let isTarget = hue>=cfg.hueMin && hue<=cfg.hueMax && saturation>=cfg.minSat && (exg>=(cfg.exg*darkFactor-dimAdjustment) || (g > r * 0.88 && g > b * 0.88));
     
-    // 단풍 모드 켜진 경우: 단풍(붉은색, 주황색, 노란색, 갈색 낙엽 계열) 조건 추가 확장
     if(isFoliage){
       const isAutumnRedOrangeYellow = (hue <= 55 || hue >= 330) && saturation >= 0.18 && brightness >= 0.15 && brightness <= 0.90 && (r > g * 0.95);
       const isBrownFoliage = (hue > 10 && hue < 45) && (r > g) && (g > b) && (r - b > 15) && brightness >= 0.20 && brightness <= 0.75;
@@ -340,16 +356,43 @@ function analyzeCanopy(){
     }
     
     if(isTarget){
-      count++;
-      const qr=Math.min(7,Math.floor(d[i]/32)),qg=Math.min(7,Math.floor(d[i+1]/32)),qb=Math.min(7,Math.floor(d[i+2]/32));
-      const key=(qr<<6)|(qg<<3)|qb;let v=plantBins.get(key);if(!v){v={n:0,r:0,g:0,b:0};plantBins.set(key,v)}
-      v.n++;v.r+=d[i];v.g+=d[i+1];v.b+=d[i+2];
-      out.data[i]=28;out.data[i+1]=235;out.data[i+2]=100;out.data[i+3]=230;
+      currentMaskData[idx] = 1;
+      originalPixelState[idx] = 1;
     } else {
-      out.data[i]=d[i];out.data[i+1]=d[i+1];out.data[i+2]=d[i+2];out.data[i+3]=Math.round(a*0.82);
+      currentMaskData[idx] = 0;
+      originalPixelState[idx] = 0;
     }
   }
-  mx.putImageData(out,0,0);
+
+  renderMaskCanvas(w, h);
+  $('canopyResults').classList.remove('hidden');
+}
+
+function renderMaskCanvas(w, h){
+  const mask=$('maskCanvas');
+  mask.width=w; mask.height=h;
+  const mx=mask.getContext('2d');
+  const imgData=mx.createImageData(w, h);
+  const d=origImgData.data;
+
+  let count=0, total=w*h;
+  const plantBins=new Map();
+
+  for(let i=0; i<total; i++){
+    const idx = i*4;
+    const isPlant = currentMaskData[i] === 1;
+    if(isPlant){
+      count++;
+      imgData.data[idx]=28; imgData.data[idx+1]=235; imgData.data[idx+2]=100; imgData.data[idx+3]=230;
+      const qr=Math.min(7,Math.floor(d[idx]/32)),qg=Math.min(7,Math.floor(d[idx+1]/32)),qb=Math.min(7,Math.floor(d[idx+2]/32));
+      const key=(qr<<6)|(qg<<3)|qb;let v=plantBins.get(key);if(!v){v={n:0,r:0,g:0,b:0};plantBins.set(key,v)}
+      v.n++;v.r+=d[idx];v.g+=d[idx+1];v.b+=d[idx+2];
+    } else {
+      imgData.data[idx]=d[idx]; imgData.data[idx+1]=d[idx+1]; imgData.data[idx+2]=d[idx+2]; imgData.data[idx+3]=Math.round(d[idx+3]*0.82);
+    }
+  }
+  mx.putImageData(imgData, 0, 0);
+
   $('canopyPct').textContent=(total?count/total*100:0).toFixed(2)+'%';
   $('plantPixels').textContent=count.toLocaleString();
   $('allPixels').textContent=total.toLocaleString();
@@ -370,9 +413,48 @@ function analyzeCanopy(){
       </div>
       <div class="pct">${r.pct.toFixed(2)}%</div>
     </div>`).join('');
-  
-  $('canopyResults').classList.remove('hidden');
 }
+
+// 수동 브러시 드로잉 이벤트 처리
+const maskEl = $('maskCanvas');
+function getMousePos(e){
+  const rect = maskEl.getBoundingClientRect();
+  const scaleX = maskEl.width / rect.width;
+  const scaleY = maskEl.height / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+}
+
+function applyBrush(pos){
+  const w = maskEl.width, h = maskEl.height;
+  const radius = parseInt($('brushSize').value);
+  const cx = Math.round(pos.x), cy = Math.round(pos.y);
+  const rSq = radius * radius;
+
+  let modified = false;
+  for(let y = Math.max(0, cy - radius); y <= Math.min(h - 1, cy + radius); y++){
+    for(let x = Math.max(0, cx - radius); x <= Math.min(w - 1, cx + radius); x++){
+      if((x - cx)*(x - cx) + (y - cy)*(y - cy) <= rSq){
+        const idx = y * w + x;
+        const newVal = brushMode === 'add' ? 1 : 0;
+        if(currentMaskData[idx] !== newVal){
+          currentMaskData[idx] = newVal;
+          modified = true;
+        }
+      }
+    }
+  }
+  if(modified) renderMaskCanvas(w, h);
+}
+
+maskEl.addEventListener('mousedown', e=>{ isDrawing = true; applyBrush(getMousePos(e)); });
+maskEl.addEventListener('mousemove', e=>{ if(isDrawing) applyBrush(getMousePos(e)); });
+window.addEventListener('mouseup', ()=> { isDrawing = false; });
+
+maskEl.addEventListener('touchstart', e=>{ isDrawing = true; applyBrush(getMousePos(e)); e.preventDefault(); }, {passive:false});
+maskEl.addEventListener('touchmove', e=>{ if(isDrawing) applyBrush(getMousePos(e)); e.preventDefault(); }, {passive:false});
+window.addEventListener('touchend', ()=> { isDrawing = false; });
 
 function downloadPlantColorsCSV(){
   const csv=[['순위','HEX','R','G','B','픽셀 수','영역 내 비율(%)','사진 전체 대비 비율(%)'],...plantColorRows.map((r,i)=>[i+1,r.hex,r.r,r.g,r.b,r.n,r.pct.toFixed(4),r.wholePct.toFixed(4)])].map(row=>row.join(',')).join('\r\n');
