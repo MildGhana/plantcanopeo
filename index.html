@@ -25,7 +25,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .slider-labels{display:flex;justify-content:space-between;font-size:11px;color:#687386;margin-top:6px}
 .foliage-toggle{margin-top:12px;display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer}
 .foliage-toggle input{width:18px;height:18px;cursor:pointer}
-.brush-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:10px;background:#f1f4f9;border-radius:10px}
+.brush-toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:10px;background:#f1f4f9;border-radius:10px}
 .brush-btn.active{background:#315be8;color:white;border-color:#315be8}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 .stat{background:#f6f8fc;border-radius:12px;padding:14px}.stat small{display:block;color:#687386}.stat strong{font-size:22px}
@@ -43,7 +43,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 <main class="app">
 <header class="head">
   <h1>식물 및 단풍 캐노피 피복률 분석기</h1>
-  <div class="muted">사진에서 식물 및 단풍 영역의 피복률을 계산하고 수동 브러시로 정밀하게 수정할 수 있습니다.</div>
+  <div class="muted">사진에서 식물 및 단풍 영역의 피복률을 계산하고 수동 브러시 및 스포이드로 정밀하게 추가/제거할 수 있습니다.</div>
 </header>
 
 <section class="panel">
@@ -96,17 +96,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
       <h3>영역 표시 및 수동 편집 마스크</h3>
       <canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block;cursor:crosshair"></canvas>
       
-      <!-- 수동 브러시 툴바 -->
+      <!-- 수동 브러시 및 스포이드 툴바 -->
       <div class="brush-toolbar">
-        <button id="brushAdd" class="brush-btn active" type="button">➕ 영역 추가</button>
-        <button id="brushRemove" class="brush-btn" type="button">➖ 영역 제거</button>
+        <button id="brushAdd" class="brush-btn active" type="button">➕ 브러시 추가</button>
+        <button id="brushRemove" class="brush-btn" type="button">➖ 브러시 제거</button>
+        <button id="dropperAdd" class="brush-btn" type="button">🎯 스포이드 추가</button>
+        <button id="dropperRemove" class="brush-btn" type="button">🧹 스포이드 제거</button>
         <button id="brushReset" type="button">초기화</button>
-        <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+        <div style="display:flex;align-items:center;gap:4px;width:100%;margin-top:6px">
           <small>브러시 크기</small>
-          <input id="brushSize" type="range" min="5" max="50" value="20" style="width:90px">
+          <input id="brushSize" type="range" min="5" max="50" value="20" style="flex:1">
         </div>
       </div>
-      <p class="note" style="margin-top:6px">마우스나 터치로 마스크 위를 칠해 영역을 수동으로 추가하거나 지울 수 있습니다.</p>
+      <p class="note" style="margin-top:6px">브러시로 직접 칠하거나, 스포이드로 특정 색상을 클릭하여 이미지 전체에서 일괄 추가/제거하세요.</p>
     </div>
   </div>
 
@@ -160,7 +162,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 <script>
 const $=id=>document.getElementById(id);
 let image=null, rows=[], plantColorRows=[], filename='palette', cameraStream=null, currentObjectUrl=null;
-let origImgData=null, currentMaskData=null, isDrawing=false, brushMode='add', originalPixelState=null;
+let origImgData=null, currentMaskData=null, isDrawing=false, toolMode='brushAdd';
 
 $('openCamera').addEventListener('click',openCamera);
 $('closeCamera').addEventListener('click',()=>closeCamera(true));
@@ -227,8 +229,21 @@ $('count').addEventListener('change',()=>{if(image)analyze()});
 $('download').addEventListener('click',downloadCSV);
 $('downloadPlantColors').addEventListener('click',downloadPlantColorsCSV);
 
-$('brushAdd').addEventListener('click',()=>{brushMode='add';$('brushAdd').classList.add('active');$('brushRemove').classList.remove('active')});
-$('brushRemove').addEventListener('click',()=>{brushMode='remove';$('brushRemove').classList.add('active');$('brushAdd').classList.remove('active')});
+const toolBtns = [
+  {id: 'brushAdd', mode: 'brushAdd'},
+  {id: 'brushRemove', mode: 'brushRemove'},
+  {id: 'dropperAdd', mode: 'dropperAdd'},
+  {id: 'dropperRemove', mode: 'dropperRemove'}
+];
+
+toolBtns.forEach(btn=>{
+  $(btn.id).addEventListener('click', ()=>{
+    toolMode = btn.mode;
+    toolBtns.forEach(b => $(b.id).classList.remove('active'));
+    $(btn.id).classList.add('active');
+  });
+});
+
 $('brushReset').addEventListener('click',()=>{if(image)analyzeCanopy()});
 
 function updateSensitivityLabel(val){
@@ -336,8 +351,7 @@ function analyzeCanopy(){
   const cfg = profiles[sLv] || profiles[10];
 
   const d = origImgData.data;
-  currentMaskData = new Uint8Array(w * h); // 1: 식물, 0: 배경
-  originalPixelState = new Uint8Array(w * h);
+  currentMaskData = new Uint8Array(w * h);
 
   for(let i=0; i<d.length; i+=4){
     const idx = i/4;
@@ -355,13 +369,7 @@ function analyzeCanopy(){
       if(isAutumnRedOrangeYellow || isBrownFoliage) isTarget = true;
     }
     
-    if(isTarget){
-      currentMaskData[idx] = 1;
-      originalPixelState[idx] = 1;
-    } else {
-      currentMaskData[idx] = 0;
-      originalPixelState[idx] = 0;
-    }
+    currentMaskData[idx] = isTarget ? 1 : 0;
   }
 
   renderMaskCanvas(w, h);
@@ -415,7 +423,7 @@ function renderMaskCanvas(w, h){
     </div>`).join('');
 }
 
-// 수동 브러시 드로잉 이벤트 처리
+// 상호작용 (브러시 또는 스포이드)
 const maskEl = $('maskCanvas');
 function getMousePos(e){
   const rect = maskEl.getBoundingClientRect();
@@ -426,34 +434,57 @@ function getMousePos(e){
   return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
 }
 
-function applyBrush(pos){
+function handleCanvasInteraction(pos){
   const w = maskEl.width, h = maskEl.height;
-  const radius = parseInt($('brushSize').value);
   const cx = Math.round(pos.x), cy = Math.round(pos.y);
-  const rSq = radius * radius;
+  if(cx < 0 || cy < 0 || cx >= w || cy >= h) return;
 
-  let modified = false;
-  for(let y = Math.max(0, cy - radius); y <= Math.min(h - 1, cy + radius); y++){
-    for(let x = Math.max(0, cx - radius); x <= Math.min(w - 1, cx + radius); x++){
-      if((x - cx)*(x - cx) + (y - cy)*(y - cy) <= rSq){
-        const idx = y * w + x;
-        const newVal = brushMode === 'add' ? 1 : 0;
-        if(currentMaskData[idx] !== newVal){
-          currentMaskData[idx] = newVal;
+  if(toolMode === 'brushAdd' || toolMode === 'brushRemove'){
+    const radius = parseInt($('brushSize').value);
+    const rSq = radius * radius;
+    let modified = false;
+    for(let y = Math.max(0, cy - radius); y <= Math.min(h - 1, cy + radius); y++){
+      for(let x = Math.max(0, cx - radius); x <= Math.min(w - 1, cx + radius); x++){
+        if((x - cx)*(x - cx) + (y - cy)*(y - cy) <= rSq){
+          const idx = y * w + x;
+          const newVal = toolMode === 'brushAdd' ? 1 : 0;
+          if(currentMaskData[idx] !== newVal){
+            currentMaskData[idx] = newVal;
+            modified = true;
+          }
+        }
+      }
+    }
+    if(modified) renderMaskCanvas(w, h);
+  } else if(toolMode === 'dropperAdd' || toolMode === 'dropperRemove'){
+    // 스포이드: 클릭한 지점의 RGB 색상을 샘플링하여 유사한 픽셀 일괄 추가/제거
+    const targetIdx = (cy * w + cx) * 4;
+    const tr = origImgData.data[targetIdx], tg = origImgData.data[targetIdx+1], tb = origImgData.data[targetIdx+2];
+    const newVal = toolMode === 'dropperAdd' ? 1 : 0;
+    let modified = false;
+
+    for(let i=0; i<w*h; i++){
+      const dIdx = i*4;
+      const dr = origImgData.data[dIdx], dg = origImgData.data[dIdx+1], db = origImgData.data[dIdx+2];
+      // 색상 유클리드 거리 허용오차 (약 38 이내의 유사 색상 일괄 처리)
+      const dist = Math.sqrt((dr-tr)*(dr-tr) + (dg-tg)*(dg-tg) + (db-tb)*(db-tb));
+      if(dist < 38){
+        if(currentMaskData[i] !== newVal){
+          currentMaskData[i] = newVal;
           modified = true;
         }
       }
     }
+    if(modified) renderMaskCanvas(w, h);
   }
-  if(modified) renderMaskCanvas(w, h);
 }
 
-maskEl.addEventListener('mousedown', e=>{ isDrawing = true; applyBrush(getMousePos(e)); });
-maskEl.addEventListener('mousemove', e=>{ if(isDrawing) applyBrush(getMousePos(e)); });
+maskEl.addEventListener('mousedown', e=>{ isDrawing = true; handleCanvasInteraction(getMousePos(e)); });
+maskEl.addEventListener('mousemove', e=>{ if(isDrawing && (toolMode==='brushAdd'||toolMode==='brushRemove')) handleCanvasInteraction(getMousePos(e)); });
 window.addEventListener('mouseup', ()=> { isDrawing = false; });
 
-maskEl.addEventListener('touchstart', e=>{ isDrawing = true; applyBrush(getMousePos(e)); e.preventDefault(); }, {passive:false});
-maskEl.addEventListener('touchmove', e=>{ if(isDrawing) applyBrush(getMousePos(e)); e.preventDefault(); }, {passive:false});
+maskEl.addEventListener('touchstart', e=>{ isDrawing = true; handleCanvasInteraction(getMousePos(e)); e.preventDefault(); }, {passive:false});
+maskEl.addEventListener('touchmove', e=>{ if(isDrawing && (toolMode==='brushAdd'||toolMode==='brushRemove')) handleCanvasInteraction(getMousePos(e)); e.preventDefault(); }, {passive:false});
 window.addEventListener('touchend', ()=> { isDrawing = false; });
 
 function downloadPlantColorsCSV(){
