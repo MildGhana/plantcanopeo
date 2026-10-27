@@ -27,12 +27,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .stat{background:#f6f8fc;border-radius:12px;padding:14px}.stat small{display:block;color:#687386}.stat strong{font-size:22px}
 .bar{height:22px;display:flex;overflow:hidden;border-radius:8px;margin:14px 0 20px;background:#eee}.seg{height:100%;min-width:1px}
 .colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.color{border:1px solid #e4e8ef;border-radius:12px;padding:12px;display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center}
+.color{border:1px solid #e4e8ef;border-radius:12px;padding:12px;display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center}
 .swatch{height:48px;width:48px;border-radius:9px;border:1px solid #0001}
-.hex{font-weight:700;font-family:ui-monospace,monospace}.rgb{font-size:12px;color:#687386;margin-top:4px}.pct{font-size:18px;font-weight:700}
+.hex{font-weight:700;font-family:ui-monospace,monospace}.rgb{font-size:12px;color:#687386;margin-top:4px}.pct{font-size:18px;font-weight:700;text-align:right}
 .image-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 @media(max-width:768px){.image-grid{grid-template-columns:1fr}}
-.preview{max-width:100%;max-height:400px;object-fit:contain;display:block;margin:16px auto 0;border-radius:10px;border:1px solid #e2e7ef}
 .note{font-size:13px;color:#687386}.hidden{display:none}
 </style>
 </head>
@@ -50,9 +49,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
   <strong>이미지를 선택하거나 이곳에 끌어다 놓으세요</strong>
   <div class="muted">PNG, JPG, WebP, GIF 등 브라우저에서 열 수 있는 이미지</div>
 </label>
-
-<!-- 업로드 직후 바로 보이는 원본 사진 미리보기 -->
-<img id="preview" class="preview hidden" alt="선택한 이미지 미리보기">
 
 <div class="controls">
   <div class="camera-wrap">
@@ -99,17 +95,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
     </div>
   </div>
 
-  <!-- 민감도 조절 바를 영역 표시 및 원본 사진 바로 아래로 이동 -->
+  <!-- 민감도 조절 바 (20단계 확장) -->
   <div class="slider-container">
     <div class="slider-header">
-      <span>식물 판별 민감도 조절</span>
-      <strong id="sensitivityLabel" style="color:#315be8">보통 (Lv.7)</strong>
+      <span>식물 판별 민감도 조절 (20단계)</span>
+      <strong id="sensitivityLabel" style="color:#315be8">Lv.10 (보통 표준)</strong>
     </div>
-    <input id="sensitivityRange" type="range" min="1" max="13" step="1" value="7">
+    <input id="sensitivityRange" type="range" min="1" max="20" step="1" value="10">
     <div class="slider-labels">
-      <span>Lv.1 (극도로 엄격)</span>
-      <span>Lv.7 (보통)</span>
-      <span>Lv.13 (극한 초고감도)</span>
+      <span>Lv.1 (매우 엄격)</span>
+      <span>Lv.10 (보통)</span>
+      <span>Lv.20 (극한 초고감도)</span>
     </div>
   </div>
 
@@ -185,8 +181,6 @@ function takePhoto(){
     const img=new Image();
     img.onload=()=>{
       image=img;
-      $('preview').src=currentObjectUrl;
-      $('preview').classList.remove('hidden');
       $('canopyOriginal').src=currentObjectUrl;
       $('analyze').disabled=false;
       analyze();
@@ -214,22 +208,7 @@ $('downloadPlantColors').addEventListener('click',downloadPlantColorsCSV);
 
 function updateSensitivityLabel(val){
   const v = parseInt(val);
-  const labels = {
-    1: "Lv.1 (극도로 엄격 - 선명한 초록만)",
-    2: "Lv.2 (매우 낮음)",
-    3: "Lv.3 (낮음+)",
-    4: "Lv.4 (약간 낮음)",
-    5: "Lv.5 (낮음-보통 사이)",
-    6: "Lv.6 (보통 이전)",
-    7: "Lv.7 (보통 표준)",
-    8: "Lv.8 (약간 높음)",
-    9: "Lv.9 (높음+)",
-    10: "Lv.10 (매우 높음 - 어두운/갈색 잎)",
-    11: "Lv.11 (초고감도)",
-    12: "Lv.12 (극한 고감도)",
-    13: "Lv.13 (최대 극한감도 - 거의 모든 녹색/음영 포착)"
-  };
-  $('sensitivityLabel').textContent = labels[v] || `Lv.${v}`;
+  $('sensitivityLabel').textContent = `Lv.${v} (${v<=5?'엄격':v<=10?'보통':v<=15?'높음':'극한 초고감도'})`;
 }
 
 function loadFile(file){
@@ -240,8 +219,6 @@ function loadFile(file){
   const img=new Image();
   img.onload=()=>{
     image=img;
-    $('preview').src=currentObjectUrl;
-    $('preview').classList.remove('hidden');
     $('canopyOriginal').src=currentObjectUrl;
     $('analyze').disabled=false;
     analyze();
@@ -297,8 +274,18 @@ function analyze(){
   $('pixels').textContent=Math.round(total).toLocaleString();
   $('groups').textContent=rows.length;
   $('bar').innerHTML=rows.map(r=>`<div class="seg" title="${r.hex} ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
-  $('colors').innerHTML=rows.map((r,i)=>`<div class="color"><div class="swatch" style="background:${r.hex}"></div><div><div class="hex">${colorName(r.r,r.g,r.b)}</div><div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div></div><div class="pct">${r.pct.toFixed(2)}%</div><button data-hex="${r.hex}">코드 복사</button></div>`).join('');
-  $('colors').querySelectorAll('button').forEach(b=>b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(b.dataset.hex);b.textContent='복사됨'}catch{}}));
+  
+  // 코드 복사 버튼 제거된 전체 이미지 색상 분석 요약 카드 렌더링
+  $('colors').innerHTML=rows.map((r,i)=>`
+    <div class="color">
+      <div class="swatch" style="background:${r.hex}"></div>
+      <div>
+        <div class="hex">${colorName(r.r,r.g,r.b)}</div>
+        <div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div>
+      </div>
+      <div class="pct">${r.pct.toFixed(2)}%</div>
+    </div>`).join('');
+  
   $('results').classList.remove('hidden');$('download').disabled=false;
 }
 
@@ -309,22 +296,19 @@ function analyzeCanopy(){
   const im=cx.getImageData(0,0,w,h),d=im.data;
   
   const sLv = parseInt($('sensitivityRange').value);
-  const profiles = {
-    1:  {hueMin:45, hueMax:125, minSat:0.25, exg:0.10,  darkBoost:0.05},
-    2:  {hueMin:42, hueMax:130, minSat:0.21, exg:0.08,  darkBoost:0.10},
-    3:  {hueMin:38, hueMax:135, minSat:0.17, exg:0.06,  darkBoost:0.15},
-    4:  {hueMin:35, hueMax:140, minSat:0.14, exg:0.04,  darkBoost:0.20},
-    5:  {hueMin:32, hueMax:145, minSat:0.11, exg:0.025, darkBoost:0.24},
-    6:  {hueMin:30, hueMax:150, minSat:0.09, exg:0.015, darkBoost:0.28},
-    7:  {hueMin:28, hueMax:155, minSat:0.075,exg:0.005, darkBoost:0.32},
-    8:  {hueMin:24, hueMax:160, minSat:0.06, exg:-0.005,darkBoost:0.38},
-    9:  {hueMin:20, hueMax:164, minSat:0.045,exg:-0.015,darkBoost:0.44},
-    10: {hueMin:16, hueMax:168, minSat:0.032,exg:-0.025,darkBoost:0.50},
-    11: {hueMin:12, hueMax:172, minSat:0.02, exg:-0.04,  darkBoost:0.57},
-    12: {hueMin:8,  hueMax:176, minSat:0.012,exg:-0.055, darkBoost:0.63},
-    13: {hueMin:5,  hueMax:179, minSat:0.005,exg:-0.07,  darkBoost:0.70}
-  };
-  const cfg = profiles[sLv] || profiles[7];
+  // 20단계 세부 파라미터 매핑 생성 (Lv.1 ~ Lv.20)
+  const profiles = {};
+  for(let i=1; i<=20; i++){
+    const t = (i-1)/19; // 0.0 to 1.0
+    profiles[i] = {
+      hueMin: Math.round(48 - t * 44),    // 48 -> 4
+      hueMax: Math.round(120 + t * 59),   // 120 -> 179
+      minSat: 0.28 - t * 0.275,           // 0.28 -> 0.005
+      exg: 0.12 - t * 0.19,               // 0.12 -> -0.07
+      darkBoost: 0.02 + t * 0.70          // 0.02 -> 0.72
+    };
+  }
+  const cfg = profiles[sLv] || profiles[10];
 
   let count=0,total=0;const plantBins=new Map();
   const mask=$('maskCanvas');mask.width=w;mask.height=h;const mx=mask.getContext('2d');const out=mx.createImageData(w,h);
@@ -336,7 +320,7 @@ function analyzeCanopy(){
     const saturation=max===0?0:delta/max, exg=2*g-r-b, brightness=(r+g+b)/3;
     const darkFactor=Math.max(0.45,Math.min(1.15,brightness/0.42)), dimAdjustment=Math.max(0,0.30-brightness)*cfg.darkBoost;
     
-    const isPlant = hue>=cfg.hueMin && hue<=cfg.hueMax && saturation>=cfg.minSat && (exg>=(cfg.exg*darkFactor-dimAdjustment) || (g > r * 0.90 && g > b * 0.90));
+    const isPlant = hue>=cfg.hueMin && hue<=cfg.hueMax && saturation>=cfg.minSat && (exg>=(cfg.exg*darkFactor-dimAdjustment) || (g > r * 0.88 && g > b * 0.88));
     
     if(isPlant){
       count++;
@@ -358,7 +342,19 @@ function analyzeCanopy(){
   $('plantColorGroups').textContent=plantColorRows.length.toLocaleString();
   $('plantDominantColor').textContent=plantColorRows.length?plantColorRows[0].hex+' · '+plantColorRows[0].pct.toFixed(2)+'%':'식물 픽셀 없음';
   $('plantColorBar').innerHTML=plantColorRows.map(r=>`<div class="seg" title="${r.hex} · 식물 영역 ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
-  $('plantColors').innerHTML=plantColorRows.map((r,i)=>`<div class="color"><div class="swatch" style="background:${r.hex}"></div><div><div class="hex">${i+1}. ${colorName(r.r,r.g,r.b)}</div><div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div><div class="rgb">사진 전체의 ${r.wholePct.toFixed(2)}%</div></div><div class="pct">${r.pct.toFixed(2)}%</div></div>`).join('');
+  
+  // 식물 영역 색상 구성 카드 (코드 복사 버튼 없음)
+  $('plantColors').innerHTML=plantColorRows.map((r,i)=>`
+    <div class="color">
+      <div class="swatch" style="background:${r.hex}"></div>
+      <div>
+        <div class="hex">${i+1}. ${colorName(r.r,r.g,r.b)}</div>
+        <div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div>
+        <div class="rgb">사진 전체의 ${r.wholePct.toFixed(2)}%</div>
+      </div>
+      <div class="pct">${r.pct.toFixed(2)}%</div>
+    </div>`).join('');
+  
   $('canopyResults').classList.remove('hidden');
 }
 
