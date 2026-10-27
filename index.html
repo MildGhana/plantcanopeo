@@ -6,106 +6,168 @@
 <title>식물 캐노피 피복률 분석기</title>
 <style>
 :root{font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#20242b;background:#f5f7fb}
-*{box-sizing:border-box}body{margin:0;padding:24px}.app{max-width:1000px;margin:auto}.head{margin-bottom:20px}
+*{box-sizing:border-box}body{margin:0;padding:24px}.app{max-width:1100px;margin:auto}.head{margin-bottom:20px}
 h1{font-size:clamp(26px,4vw,38px);margin:0 0 8px}.muted{color:#687386;line-height:1.6}
 .panel{background:white;border:1px solid #e2e7ef;border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 5px 20px #1a2b4a08}
-.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;min-height:160px;max-width:100%;padding:24px 18px;border:2px dashed #b8c4d6;border-radius:14px;text-align:center;background:#fafcff;cursor:pointer;overflow-wrap:anywhere;word-break:keep-all;line-height:1.55}.drop strong{display:block;max-width:100%;font-size:clamp(15px,2.2vw,18px)}.drop .muted{max-width:100%;font-size:14px}.drop input{display:none}
-.drop:hover{border-color:#4263eb;background:#f5f7ff}
-.controls{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-top:16px}.camera-wrap{position:relative;flex:0 1 240px;min-width:190px}.camera-inline{width:100%;margin-top:10px;padding:12px;border:1px solid #d9e2ee;border-radius:12px;background:#f8faff}.camera-inline video{display:block;width:100%;max-height:300px;min-height:140px;background:#151922;border-radius:9px;object-fit:contain}.camera-inline .controls{gap:8px;margin-top:10px}.camera-inline .controls button{padding:8px 10px;font-size:14px}.camera-inline .note{margin:8px 0 0;overflow-wrap:anywhere}.camera-inline h3{font-size:16px;margin:0 0 8px}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;min-height:150px;padding:20px;border:2px dashed #b8c4d6;border-radius:14px;text-align:center;background:#fafcff;cursor:pointer}
+.drop:hover{border-color:#4263eb;background:#f5f7ff}.drop input{display:none}
+.controls{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:16px}
+.camera-wrap{position:relative;flex:0 1 220px;min-width:180px}.camera-inline{width:100%;margin-top:10px;padding:12px;border:1px solid #d9e2ee;border-radius:12px;background:#f8faff}
+.camera-inline video{display:block;width:100%;max-height:260px;background:#151922;border-radius:9px;object-fit:contain}
 button,select{border:1px solid #d5dce8;background:white;border-radius:10px;padding:10px 14px;font:inherit;cursor:pointer}
 button.primary{background:#315be8;color:white;border-color:#315be8}.camera-btn{background:#12805c;color:white;border-color:#12805c}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.stat{background:#f6f8fc;border-radius:12px;padding:14px}.stat small{display:block;color:#687386}.stat strong{font-size:22px}
+.slider-container{flex:1 1 320px;background:#f8faff;border:1px solid #d9e2ee;border-radius:12px;padding:14px}
+.slider-header{display:flex;justify-content:between;align-items:center;margin-bottom:8px;font-weight:700;font-size:15px}
+.slider-header span{color:#315be8}
+input[type=range]{width:100%;height:10px;border-radius:5px;background:#d5dce8;outline:none;-webkit-appearance:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#315be8;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2)}
+.slider-labels{display:flex;justify-content:space-between;font-size:11px;color:#687386;margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat{background:#f6f8fc;border-radius:12px;padding:14px}.stat small{display:block;color:#687386}.stat strong{font-size:22px}
 .bar{height:22px;display:flex;overflow:hidden;border-radius:8px;margin:14px 0 20px;background:#eee}.seg{height:100%;min-width:1px}
 .colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.plant-color-intro{margin:8px 0 12px;color:#687386;font-size:13px;line-height:1.55}
 .color{border:1px solid #e4e8ef;border-radius:12px;padding:12px;display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center}
-.swatch{height:48px;width:48px;border-radius:9px;border:1px solid #0001}.hex{font-weight:700;font-family:ui-monospace,monospace}.rgb{font-size:12px;color:#687386;margin-top:4px}.pct{font-size:18px;font-weight:700}.color button{grid-column:1/-1;padding:7px}
+.swatch{height:48px;width:48px;border-radius:9px;border:1px solid #0001}
+.hex{font-weight:700;font-family:ui-monospace,monospace}.rgb{font-size:12px;color:#687386;margin-top:4px}.pct{font-size:18px;font-weight:700}
+.image-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:768px){.image-grid{grid-template-columns:1fr}}
 .note{font-size:13px;color:#687386}.hidden{display:none}
-@media(max-width:600px){body{padding:12px}.panel{padding:14px}.color{grid-template-columns:42px 1fr auto}.swatch{width:42px;height:42px}}
 </style>
 </head>
-<body><main class="app">
-<header class="head"><h1>식물 캐노피 피복률 분석기</h1><div class="muted">사진에서 식물로 분류된 픽셀의 비율을 계산해 캐노피 피복률을 추정합니다. 이미지는 브라우저 안에서 처리되며 서버로 전송되지 않습니다.</div></header>
+<body>
+<main class="app">
+<header class="head">
+  <h1>식물 캐노피 피복률 분석기</h1>
+  <div class="muted">사진에서 식물로 분류된 픽셀의 비율을 계산해 캐노피 피복률을 추정합니다. 이미지는 브라우저 안에서 처리되며 서버로 전송되지 않습니다.</div>
+</header>
+
 <section class="panel">
 <label class="drop" id="drop">
   <input id="file" type="file" accept="image/*">
-  <div style="font-size:34px">＋</div><strong>이미지를 선택하거나 이곳에 끌어다 놓으세요</strong>
+  <div style="font-size:34px">＋</div>
+  <strong>이미지를 선택하거나 이곳에 끌어다 놓으세요</strong>
   <div class="muted">PNG, JPG, WebP, GIF 등 브라우저에서 열 수 있는 이미지</div>
 </label>
+
 <div class="controls">
-<div class="camera-wrap">
-<button class="camera-btn" id="openCamera" type="button" aria-expanded="false" aria-controls="cameraPanel">📷 카메라로 촬영</button>
-<section id="cameraPanel" class="camera-inline hidden" aria-label="카메라 촬영">
-  <h3>카메라 촬영</h3>
-  <p class="muted" style="font-size:13px;margin:0 0 8px">권한 요청이 나타나면 허용을 선택하세요.</p>
-  <video id="cameraVideo" autoplay playsinline></video>
-  <div class="controls"><button class="primary" id="takePhoto" type="button" disabled>사진 촬영</button><button id="closeCamera" type="button">닫기</button></div>
-  <p class="note" id="cameraStatus" role="status" aria-live="polite"></p>
-</section>
+  <div class="camera-wrap">
+    <button class="camera-btn" id="openCamera" type="button">📷 카메라로 촬영</button>
+    <section id="cameraPanel" class="camera-inline hidden">
+      <h3>카메라 촬영</h3>
+      <video id="cameraVideo" autoplay playsinline></video>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="primary" id="takePhoto" type="button" disabled style="flex:1">촬영</button>
+        <button id="closeCamera" type="button">닫기</button>
+      </div>
+      <p class="note" id="cameraStatus" style="margin-top:6px"></p>
+    </section>
+  </div>
+
+  <div class="slider-container">
+    <div class="slider-header">
+      <span>식물 판별 민감도 조절</span>
+      <strong id="sensitivityLabel" style="color:#315be8">보통 (Lv.7)</strong>
+    </div>
+    <input id="sensitivityRange" type="range" min="1" max="13" step="1" value="7">
+    <div class="slider-labels">
+      <span>Lv.1 (극도로 엄격)</span>
+      <span>Lv.7 (보통)</span>
+      <span>Lv.13 (극한 초고감도)</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <label>표시할 색상 수
+      <select id="count"><option>5</option><option selected>8</option><option>10</option><option>12</option><option>16</option><option>20</option></select>
+    </label>
+    <button class="primary" id="analyze" disabled>식물 영역 식별 및 비율 계산</button>
+    <button id="download" disabled>색상 분석 CSV 저장</button>
+  </div>
 </div>
-<label>표시할 색상 수
-<select id="count"><option>5</option><option selected>8</option><option>10</option><option>12</option><option>16</option><option>20</option></select>
-</label>
-<label>식물 판별 민감도
-<select id="sensitivity">
-  <option value="verylow">매우 낮음</option>
-  <option value="low">낮음</option>
-  <option value="lowmedium">약간 낮음</option>
-  <option value="medium">보통</option>
-  <option value="highmedium">약간 높음</option>
-  <option value="high">높음</option>
-  <option value="veryhigh">매우 높음</option>
-  <option value="ultrahigh">초고감도</option>
-  <option value="extreme" selected>극한감도</option>
-</select>
-</label>
-<button class="primary" id="analyze" disabled>식물 영역 식별 및 비율 계산</button>
-<button id="reanalyze" type="button" disabled>식물 영역 다시 분석</button>
-<button id="download" disabled>색상 분석 CSV 저장</button>
-</div>
-<p class="note" style="margin-top:14px">참고: 사진에는 미세한 색조가 매우 많습니다. 결과는 비슷한 픽셀 색상을 묶은 대표 색상 그룹이며, 각 비율은 투명 픽셀을 제외한 이미지 픽셀 기준입니다.</p>
 </section>
-<section id="canopyResults" class="panel hidden"><h2>식물 영역 식별 및 피복률 결과</h2><div class="stats"><div class="stat"><small>식물 피복률 추정치</small><strong id="canopyPct">—</strong></div><div class="stat"><small>식물로 분류된 픽셀</small><strong id="plantPixels">—</strong></div><div class="stat"><small>분석 대상 픽셀</small><strong id="allPixels">—</strong></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px"><div><h3>식물 영역 표시</h3><canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef"></canvas><p class="note">밝은 초록색으로 덧칠된 부분이 식물로 판별된 영역입니다.</p></div><div><h3>원본 사진</h3><img id="canopyOriginal" alt="분석 원본" style="width:100%;border-radius:12px;border:1px solid #e2e7ef"></div></div><div style="margin-top:20px;border-top:1px solid #e2e7ef;padding-top:16px"><h3>식물로 판별된 영역의 색상 구성</h3><p class="plant-color-intro">아래 색상 비율은 사진 전체가 아니라, 식물로 판별된 픽셀만을 기준으로 계산합니다.</p><div class="stats"><div class="stat"><small>분류된 식물 영역 색상 그룹</small><strong id="plantColorGroups">—</strong></div><div class="stat"><small>가장 많은 대표 색상</small><strong id="plantDominantColor" style="font-size:17px">—</strong></div></div><div class="bar" id="plantColorBar"></div><div class="colors" id="plantColors"></div><button id="downloadPlantColors" type="button" style="margin-top:12px">식물 영역 색상 CSV 저장</button></div></section>
+
+<section id="canopyResults" class="panel hidden">
+  <h2>식물 영역 식별 및 피복률 결과</h2>
+  <div class="stats">
+    <div class="stat"><small>식물 피복률 추정치</small><strong id="canopyPct">—</strong></div>
+    <div class="stat"><small>식물로 분류된 픽셀</small><strong id="plantPixels">—</strong></div>
+    <div class="stat"><small>분석 대상 픽셀</small><strong id="allPixels">—</strong></div>
+  </div>
+
+  <div class="image-grid">
+    <div>
+      <h3>식물 영역 표시 (마스크)</h3>
+      <canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block"></canvas>
+      <p class="note" style="margin-top:8px">밝은 초록색으로 덧칠된 부분이 식물로 판별된 영역입니다.</p>
+    </div>
+    <div>
+      <h3>원본 사진</h3>
+      <img id="canopyOriginal" alt="분석 원본" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block">
+      <p class="note" style="margin-top:8px">업로드하거나 촬영한 원본 이미지입니다.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;border-top:1px solid #e2e7ef;padding-top:16px">
+    <h3>식물로 판별된 영역의 색상 구성</h3>
+    <p class="muted" style="font-size:13px;margin-bottom:12px">식물로 판별된 픽셀들만을 대상으로 한 색상 분포 비율입니다.</p>
+    <div class="stats">
+      <div class="stat"><small>분류된 식물 영역 색상 그룹</small><strong id="plantColorGroups">—</strong></div>
+      <div class="stat"><small>가장 많은 대표 색상</small><strong id="plantDominantColor" style="font-size:17px">—</strong></div>
+    </div>
+    <div class="bar" id="plantColorBar"></div>
+    <div class="colors" id="plantColors"></div>
+    <button id="downloadPlantColors" type="button" style="margin-top:14px">식물 영역 색상 CSV 저장</button>
+  </div>
+</section>
+
 <section id="results" class="hidden">
-<div class="panel"><h2>분석 요약</h2><div class="stats">
-<div class="stat"><small>이미지 크기</small><strong id="dimensions">—</strong></div>
-<div class="stat"><small>분석한 픽셀</small><strong id="pixels">—</strong></div>
-<div class="stat"><small>색상 그룹 수</small><strong id="groups">—</strong></div>
-</div><div class="bar" id="bar"></div><div class="colors" id="colors"></div></div>
+  <div class="panel">
+    <h2>전체 이미지 색상 분석 요약</h2>
+    <div class="stats">
+      <div class="stat"><small>이미지 크기</small><strong id="dimensions">—</strong></div>
+      <div class="stat"><small>분석한 픽셀</small><strong id="pixels">—</strong></div>
+      <div class="stat"><small>색상 그룹 수</small><strong id="groups">—</strong></div>
+    </div>
+    <div class="bar" id="bar"></div>
+    <div class="colors" id="colors"></div>
+  </div>
 </section>
+
 <canvas id="canvas" class="hidden"></canvas>
 </main>
+
 <script>
 const $=id=>document.getElementById(id);
 let image=null, rows=[], plantColorRows=[], filename='palette', cameraStream=null, currentObjectUrl=null;
+
 $('openCamera').addEventListener('click',openCamera);
-$('closeCamera').addEventListener('click',closeCamera);
+$('closeCamera').addEventListener('click',()=>closeCamera(true));
 $('takePhoto').addEventListener('click',takePhoto);
-window.addEventListener('pagehide',closeCamera);
+window.addEventListener('pagehide',()=>closeCamera(false));
+
 async function openCamera(){
-  const panel=$('cameraPanel');
-  panel.classList.remove('hidden');
-  $('openCamera').setAttribute('aria-expanded','true');
+  $('cameraPanel').classList.remove('hidden');
   $('takePhoto').disabled=true;
-  $('cameraStatus').textContent='브라우저의 카메라 권한 요청을 기다리는 중입니다.';
+  $('cameraStatus').textContent='카메라 연결 중...';
   if(cameraStream) closeCamera(false);
   try{
     cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
     $('cameraVideo').srcObject=cameraStream;
     await $('cameraVideo').play();
     $('takePhoto').disabled=false;
-    $('cameraStatus').textContent='카메라가 켜졌습니다.';
+    $('cameraStatus').textContent='준비 완료';
   }catch(err){
     cameraStream=null;
-    $('cameraStatus').textContent='카메라를 열 수 없습니다. 권한 설정을 확인해 주세요.';
+    $('cameraStatus').textContent='카메라를 켤 수 없습니다.';
   }
 }
+
 function closeCamera(hide=true){
   if(cameraStream){cameraStream.getTracks().forEach(track=>track.stop());cameraStream=null;}
   const video=$('cameraVideo'); if(video)video.srcObject=null;
-  const take=$('takePhoto'); if(take)take.disabled=true;
-  if(hide){const panel=$('cameraPanel'); if(panel)panel.classList.add('hidden');$('openCamera').setAttribute('aria-expanded','false');}
+  if(hide){$('cameraPanel').classList.add('hidden');}
 }
+
 function takePhoto(){
   const video=$('cameraVideo'); if(!video.videoWidth)return;
   const canvas=$('canvas'); canvas.width=video.videoWidth;canvas.height=video.videoHeight;
@@ -119,164 +181,187 @@ function takePhoto(){
       image=img;
       $('canopyOriginal').src=currentObjectUrl;
       $('analyze').disabled=false;
-      $('reanalyze').disabled=false;
       analyze();
       analyzeCanopy();
-      closeCamera();
+      closeCamera(true);
     };
-    img.onerror=()=>alert('촬영된 사진을 로드할 수 없습니다.');
     img.src=currentObjectUrl;
-  }, 'image/jpeg', 0.94);
+  },'image/jpeg',0.94);
 }
+
 $('drop').addEventListener('click',e=>{if(e.target.tagName!=='INPUT')$('file').click()});
 $('file').addEventListener('change',e=>loadFile(e.target.files[0]));
 $('drop').addEventListener('dragover',e=>{e.preventDefault();$('drop').style.borderColor='#315be8'});
-$('drop').addEventListener('dragleave',()=> $('drop').style.borderColor='');
+$('drop').addEventListener('dragleave',()=>$('drop').style.borderColor='');
 $('drop').addEventListener('drop',e=>{e.preventDefault();$('drop').style.borderColor='';loadFile(e.dataTransfer.files[0])});
+
 $('analyze').addEventListener('click',()=>{analyze();analyzeCanopy()});
-$('reanalyze').addEventListener('click',analyzeCanopy);
-$('sensitivity').addEventListener('change',()=>{if(image)analyzeCanopy()});
+$('sensitivityRange').addEventListener('input', e=>{
+  updateSensitivityLabel(e.target.value);
+  if(image) analyzeCanopy();
+});
 $('count').addEventListener('change',()=>{if(image)analyze()});
 $('download').addEventListener('click',downloadCSV);
 $('downloadPlantColors').addEventListener('click',downloadPlantColorsCSV);
 
+function updateSensitivityLabel(val){
+  const v = parseInt(val);
+  const labels = {
+    1: "Lv.1 (극도로 엄격 - 선명한 초록만)",
+    2: "Lv.2 (매우 낮음)",
+    3: "Lv.3 (낮음+)",
+    4: "Lv.4 (약간 낮음)",
+    5: "Lv.5 (낮음-보통 사이)",
+    6: "Lv.6 (보통 이전)",
+    7: "Lv.7 (보통 표준)",
+    8: "Lv.8 (약간 높음)",
+    9: "Lv.9 (높음+)",
+    10: "Lv.10 (매우 높음 - 어두운/갈색 잎)",
+    11: "Lv.11 (초고감도)",
+    12: "Lv.12 (극한 고감도)",
+    13: "Lv.13 (최대 극한감도 - 거의 모든 녹색/음영 포착)"
+  };
+  $('sensitivityLabel').textContent = labels[v] || `Lv.${v}`;
+}
+
 function loadFile(file){
- if(!file||!file.type.startsWith('image/'))return;
- filename=(file.name||'palette').replace(/\.[^.]+$/,'');
- if(currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
- currentObjectUrl=URL.createObjectURL(file);
- 
- // 원본 이미지 엘리먼트에 직접 URL 할당 (안정적 렌더링 보장)
- $('canopyOriginal').src=currentObjectUrl;
- 
- const img=new Image();
- img.onload=()=>{
-   image=img;
-   $('analyze').disabled=false;
-   $('reanalyze').disabled=false;
-   analyze();
-   analyzeCanopy();
- };
- img.onerror=()=>{
-   alert('이미지를 불러오는 중 오류가 발생했습니다. 다른 파일을 선택해 주세요.');
- };
- img.src=currentObjectUrl;
+  if(!file||!file.type.startsWith('image/'))return;
+  filename=(file.name||'palette').replace(/\.[^.]+$/,'');
+  if(currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+  currentObjectUrl=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=()=>{
+    image=img;
+    $('canopyOriginal').src=currentObjectUrl;
+    $('analyze').disabled=false;
+    analyze();
+    analyzeCanopy();
+  };
+  img.onerror=()=>alert('이미지를 불러올 수 없습니다.');
+  img.src=currentObjectUrl;
 }
 
 function colorName(r,g,b){
- const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
- const lightness=(max+min)/510, lPct=Math.round(lightness*100), v=max/255;
- let h=0;
- if(delta){
-   if(max===r)h=60*(((g-b)/delta)%6);
-   else if(max===g)h=60*((b-r)/delta+2);
-   else h=60*((r-g)/delta+4);
-   if(h<0)h+=360;
- }
- const s=delta===0?0:delta/(1-Math.abs(2*lightness-1));
- const satPct=Math.round((Number.isFinite(s)?s:0)*100);
- if(delta<22){
-   let tone='Neutral';
-   const warm=r-b, cool=b-r;
-   if(warm>=9)tone='Warm'; else if(cool>=9)tone='Cool';
-   let level=max<25?'Black':lPct<18?'Very Dark Gray':lPct<32?'Dark Gray':lPct<58?'Medium Gray':lPct<88?'Light Gray':'Off-White';
-   return (level==='Black'?'Black':tone==='Neutral'?level:`${tone} ${level}`);
- } else {
-   let name='Color';
-   if(h<15||h>=345)name='Red'; else if(h<42)name='Orange'; else if(h<68)name='Yellow'; else if(h<105)name='Lime Green'; else if(h<145)name='Green'; else if(h<195)name='Cyan'; else if(h<255)name='Blue'; else if(h<295)name='Purple'; else name='Pink';
-   return `${v<0.42?'Dark':v<0.68?'Medium':'Light'} ${name} (S${satPct}%)`;
- }
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+  const lightness=(max+min)/510, lPct=Math.round(lightness*100), v=max/255;
+  let h=0;
+  if(delta){
+    if(max===r)h=60*(((g-b)/delta)%6);
+    else if(max===g)h=60*((b-r)/delta+2);
+    else h=60*((r-g)/delta+4);
+    if(h<0)h+=360;
+  }
+  const s=delta===0?0:delta/(1-Math.abs(2*lightness-1));
+  const satPct=Math.round((Number.isFinite(s)?s:0)*100);
+  if(delta<22){
+    let tone='Neutral';
+    const warm=r-b, cool=b-r;
+    if(warm>=9)tone='Warm'; else if(cool>=9)tone='Cool';
+    let level=max<25?'Black':lPct<18?'Very Dark Gray':lPct<32?'Dark Gray':lPct<58?'Medium Gray':lPct<88?'Light Gray':'Off-White';
+    return (level==='Black'?'Black':tone==='Neutral'?level:`${tone} ${level}`);
+  } else {
+    let name='Color';
+    if(h<15||h>=345)name='Red'; else if(h<42)name='Orange'; else if(h<68)name='Yellow'; else if(h<105)name='Lime Green'; else if(h<145)name='Green'; else if(h<195)name='Cyan'; else if(h<255)name='Blue'; else if(h<295)name='Purple'; else name='Pink';
+    return `${v<0.42?'Dark':v<0.68?'Medium':'Light'} ${name} (S${satPct}%)`;
+  }
 }
 
 function analyze(){
- if(!image)return;
- const canvas=$('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
- const scale=Math.min(1,700/Math.max(image.naturalWidth,image.naturalHeight));
- canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
- ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);
- const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
- const bins=new Map();let total=0;
- for(let i=0;i<data.length;i+=4){
-   const a=data[i+3]/255;if(a<0.05)continue;
-   const r=data[i],g=data[i+1],b=data[i+2];
-   const key=(Math.min(7,Math.floor(r/32))<<6)|(Math.min(7,Math.floor(g/32))<<3)|Math.min(7,Math.floor(b/32));
-   let v=bins.get(key);if(!v){v={n:0,r:0,g:0,b:0};bins.set(key,v)}
-   v.n+=a;v.r+=r*a;v.g+=g*a;v.b+=b*a;total+=a;
- }
- rows=[...bins.values()].map(v=>({n:v.n,r:Math.round(v.r/v.n),g:Math.round(v.g/v.n),b:Math.round(v.b/v.n)})).sort((a,b)=>b.n-a.n).slice(0,Number($('count').value));
- rows=rows.map(v=>({...v,hex:'#'+[v.r,v.g,v.b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase(),pct:v.n/total*100}));
- $('dimensions').textContent=image.naturalWidth.toLocaleString()+' × '+image.naturalHeight.toLocaleString();
- $('pixels').textContent=Math.round(total).toLocaleString();
- $('groups').textContent=rows.length;
- $('bar').innerHTML=rows.map(r=>`<div class="seg" title="${r.hex} ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
- $('colors').innerHTML=rows.map((r,i)=>`<div class="color"><div class="swatch" style="background:${r.hex}"></div><div><div class="hex">${colorName(r.r,r.g,r.b)}</div><div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div></div><div class="pct">${r.pct.toFixed(2)}%</div><button data-hex="${r.hex}">색상 코드 복사</button></div>`).join('');
- $('colors').querySelectorAll('button').forEach(b=>b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(b.dataset.hex);b.textContent='복사됨'}catch{}}));
- $('results').classList.remove('hidden');$('download').disabled=false;
+  if(!image)return;
+  const canvas=$('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const scale=Math.min(1,700/Math.max(image.naturalWidth,image.naturalHeight));
+  canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);
+  const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+  const bins=new Map();let total=0;
+  for(let i=0;i<data.length;i+=4){
+    const a=data[i+3]/255;if(a<0.05)continue;
+    const r=data[i],g=data[i+1],b=data[i+2];
+    const key=(Math.min(7,Math.floor(r/32))<<6)|(Math.min(7,Math.floor(g/32))<<3)|Math.min(7,Math.floor(b/32));
+    let v=bins.get(key);if(!v){v={n:0,r:0,g:0,b:0};bins.set(key,v)}
+    v.n+=a;v.r+=r*a;v.g+=g*a;v.b+=b*a;total+=a;
+  }
+  rows=[...bins.values()].map(v=>({n:v.n,r:Math.round(v.r/v.n),g:Math.round(v.g/v.n),b:Math.round(v.b/v.n)})).sort((a,b)=>b.n-a.n).slice(0,Number($('count').value));
+  rows=rows.map(v=>({...v,hex:'#'+[v.r,v.g,v.b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase(),pct:v.n/total*100}));
+  $('dimensions').textContent=image.naturalWidth.toLocaleString()+' × '+image.naturalHeight.toLocaleString();
+  $('pixels').textContent=Math.round(total).toLocaleString();
+  $('groups').textContent=rows.length;
+  $('bar').innerHTML=rows.map(r=>`<div class="seg" title="${r.hex} ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
+  $('colors').innerHTML=rows.map((r,i)=>`<div class="color"><div class="swatch" style="background:${r.hex}"></div><div><div class="hex">${colorName(r.r,r.g,r.b)}</div><div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div></div><div class="pct">${r.pct.toFixed(2)}%</div><button data-hex="${r.hex}">코드 복사</button></div>`).join('');
+  $('colors').querySelectorAll('button').forEach(b=>b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(b.dataset.hex);b.textContent='복사됨'}catch{}}));
+  $('results').classList.remove('hidden');$('download').disabled=false;
 }
 
 function analyzeCanopy(){
- if(!image)return;
- const w=Math.min(1000,image.naturalWidth), scale=w/image.naturalWidth, h=Math.max(1,Math.round(image.naturalHeight*scale));
- const c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(image,0,0,w,h);
- const im=cx.getImageData(0,0,w,h),d=im.data, sens=$('sensitivity').value;
- 
- // 최상단 극한감도 및 초고감도 단계를 포함한 민감도 프로필 설정
- const cfg={
-   verylow:    {hueMin:35, hueMax:145, minSat:0.15, exg:0.04,  darkBoost:0.20},
-   low:        {hueMin:30, hueMax:152, minSat:0.11, exg:0.02,  darkBoost:0.27},
-   lowmedium:  {hueMin:25, hueMax:160, minSat:0.08, exg:0.005, darkBoost:0.35},
-   medium:     {hueMin:20, hueMax:168, minSat:0.06, exg:-0.01, darkBoost:0.42},
-   highmedium: {hueMin:16, hueMax:172, minSat:0.04, exg:-0.025,darkBoost:0.50},
-   high:       {hueMin:12, hueMax:176, minSat:0.025,exg:-0.04, darkBoost:0.58},
-   veryhigh:   {hueMin:8,  hueMax:178, minSat:0.01, exg:-0.06, darkBoost:0.65},
-   ultrahigh:  {hueMin:5,  hueMax:182, minSat:0.005,exg:-0.08, darkBoost:0.75},
-   extreme:    {hueMin:0,  hueMax:190, minSat:0.00, exg:-0.12, darkBoost:0.90}
- }[sens] || {hueMin:0, hueMax:190, minSat:0.00, exg:-0.12, darkBoost:0.90};
+  if(!image)return;
+  const w=Math.min(1000,image.naturalWidth), scale=w/image.naturalWidth, h=Math.max(1,Math.round(image.naturalHeight*scale));
+  const c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(image,0,0,w,h);
+  const im=cx.getImageData(0,0,w,h),d=im.data;
+  
+  const sLv = parseInt($('sensitivityRange').value);
+  // 13단계 세부 파라미터 매핑 (낮은 단계는 매우 엄격, 높은 단계는 극한 감도)
+  const profiles = {
+    1:  {hueMin:45, hueMax:125, minSat:0.25, exg:0.10,  darkBoost:0.05},
+    2:  {hueMin:42, hueMax:130, minSat:0.21, exg:0.08,  darkBoost:0.10},
+    3:  {hueMin:38, hueMax:135, minSat:0.17, exg:0.06,  darkBoost:0.15},
+    4:  {hueMin:35, hueMax:140, minSat:0.14, exg:0.04,  darkBoost:0.20},
+    5:  {hueMin:32, hueMax:145, minSat:0.11, exg:0.025, darkBoost:0.24},
+    6:  {hueMin:30, hueMax:150, minSat:0.09, exg:0.015, darkBoost:0.28},
+    7:  {hueMin:28, hueMax:155, minSat:0.075,exg:0.005, darkBoost:0.32}, // 보통 표준
+    8:  {hueMin:24, hueMax:160, minSat:0.06, exg:-0.005,darkBoost:0.38},
+    9:  {hueMin:20, hueMax:164, minSat:0.045,exg:-0.015,darkBoost:0.44},
+    10: {hueMin:16, hueMax:168, minSat:0.032,exg:-0.025,darkBoost:0.50},
+    11: {hueMin:12, hueMax:172, minSat:0.02, exg:-0.04,  darkBoost:0.57},
+    12: {hueMin:8,  hueMax:176, minSat:0.012,exg:-0.055, darkBoost:0.63},
+    13: {hueMin:5,  hueMax:179, minSat:0.005,exg:-0.07,  darkBoost:0.70}
+  };
+  const cfg = profiles[sLv] || profiles[7];
 
- let count=0,total=0;const plantBins=new Map();
- const mask=$('maskCanvas');mask.width=w;mask.height=h;const mx=mask.getContext('2d');const out=mx.createImageData(w,h);
- 
- for(let i=0;i<d.length;i+=4){
-   const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255,a=d[i+3];if(a<10)continue;total++;
-   const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
-   let hue=0;if(delta>0){if(max===r)hue=60*(((g-b)/delta)%6);else if(max===g)hue=60*((b-r)/delta+2);else hue=60*((r-g)/delta+4);if(hue<0)hue+=360;}
-   const saturation=max===0?0:delta/max, exg=2*g-r-b, brightness=(r+g+b)/3;
-   const darkFactor=Math.max(0.45,Math.min(1.15,brightness/0.42)), dimAdjustment=Math.max(0,0.30-brightness)*cfg.darkBoost;
-   
-   // 갈색빛, 붉은빛, 어두운 그늘 속의 잎까지 완벽히 잡아내도록 보완된 판별 조건
-   const isPlant=hue>=cfg.hueMin && hue<=cfg.hueMax && saturation>=cfg.minSat && (exg>=(cfg.exg*darkFactor-dimAdjustment) || (g >= r * 0.85 && g >= b * 0.85) || (sens==='extreme' && brightness<0.85));
-   
-   if(isPlant){
-     count++;
-     const qr=Math.min(7,Math.floor(d[i]/32)),qg=Math.min(7,Math.floor(d[i+1]/32)),qb=Math.min(7,Math.floor(d[i+2]/32));
-     const key=(qr<<6)|(qg<<3)|qb;let v=plantBins.get(key);if(!v){v={n:0,r:0,g:0,b:0};plantBins.set(key,v)}
-     v.n++;v.r+=d[i];v.g+=d[i+1];v.b+=d[i+2];
-     out.data[i]=28;out.data[i+1]=235;out.data[i+2]=100;out.data[i+3]=230;
-   } else {out.data[i]=d[i];out.data[i+1]=d[i+1];out.data[i+2]=d[i+2];out.data[i+3]=Math.round(a*0.82);}
- }
- mx.putImageData(out,0,0);
- $('canopyPct').textContent=(total?count/total*100:0).toFixed(2)+'%';
- $('plantPixels').textContent=count.toLocaleString();
- $('allPixels').textContent=total.toLocaleString();
- 
- plantColorRows=[...plantBins.values()].map(v=>({n:v.n,r:Math.round(v.r/v.n),g:Math.round(v.g/v.n),b:Math.round(v.b/v.n)})).sort((a,b)=>b.n-a.n).slice(0,Number($('count').value));
- plantColorRows=plantColorRows.map(v=>({...v,hex:'#'+[v.r,v.g,v.b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase(),pct:count?v.n/count*100:0,wholePct:total?v.n/total*100:0}));
- $('plantColorGroups').textContent=plantColorRows.length.toLocaleString();
- $('plantDominantColor').textContent=plantColorRows.length?plantColorRows[0].hex+' · '+plantColorRows[0].pct.toFixed(2)+'%':'식물 픽셀 없음';
- $('plantColorBar').innerHTML=plantColorRows.map(r=>`<div class="seg" title="${r.hex} · 식물 영역 ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
- $('plantColors').innerHTML=plantColorRows.map((r,i)=>`<div class="color"><div class="swatch" style="background:${r.hex}"></div><div><div class="hex">${i+1}. ${colorName(r.r,r.g,r.b)}</div><div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div><div class="rgb">사진 전체의 ${r.wholePct.toFixed(2)}%</div></div><div class="pct">${r.pct.toFixed(2)}%</div></div>`).join('');
- $('canopyResults').classList.remove('hidden');
+  let count=0,total=0;const plantBins=new Map();
+  const mask=$('maskCanvas');mask.width=w;mask.height=h;const mx=mask.getContext('2d');const out=mx.createImageData(w,h);
+  
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255,a=d[i+3];if(a<10)continue;total++;
+    const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;
+    let hue=0;if(delta>0){if(max===r)hue=60*(((g-b)/delta)%6);else if(max===g)hue=60*((b-r)/delta+2);else hue=60*((r-g)/delta+4);if(hue<0)hue+=360;}
+    const saturation=max===0?0:delta/max, exg=2*g-r-b, brightness=(r+g+b)/3;
+    const darkFactor=Math.max(0.45,Math.min(1.15,brightness/0.42)), dimAdjustment=Math.max(0,0.30-brightness)*cfg.darkBoost;
+    
+    const isPlant = hue>=cfg.hueMin && hue<=cfg.hueMax && saturation>=cfg.minSat && (exg>=(cfg.exg*darkFactor-dimAdjustment) || (g > r * 0.90 && g > b * 0.90));
+    
+    if(isPlant){
+      count++;
+      const qr=Math.min(7,Math.floor(d[i]/32)),qg=Math.min(7,Math.floor(d[i+1]/32)),qb=Math.min(7,Math.floor(d[i+2]/32));
+      const key=(qr<<6)|(qg<<3)|qb;let v=plantBins.get(key);if(!v){v={n:0,r:0,g:0,b:0};plantBins.set(key,v)}
+      v.n++;v.r+=d[i];v.g+=d[i+1];v.b+=d[i+2];
+      out.data[i]=28;out.data[i+1]=235;out.data[i+2]=100;out.data[i+3]=230;
+    } else {
+      out.data[i]=d[i];out.data[i+1]=d[i+1];out.data[i+2]=d[i+2];out.data[i+3]=Math.round(a*0.82);
+    }
+  }
+  mx.putImageData(out,0,0);
+  $('canopyPct').textContent=(total?count/total*100:0).toFixed(2)+'%';
+  $('plantPixels').textContent=count.toLocaleString();
+  $('allPixels').textContent=total.toLocaleString();
+  
+  plantColorRows=[...plantBins.values()].map(v=>({n:v.n,r:Math.round(v.r/v.n),g:Math.round(v.g/v.n),b:Math.round(v.b/v.n)})).sort((a,b)=>b.n-a.n).slice(0,Number($('count').value));
+  plantColorRows=plantColorRows.map(v=>({...v,hex:'#'+[v.r,v.g,v.b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase(),pct:count?v.n/count*100:0,wholePct:total?v.n/total*100:0}));
+  $('plantColorGroups').textContent=plantColorRows.length.toLocaleString();
+  $('plantDominantColor').textContent=plantColorRows.length?plantColorRows[0].hex+' · '+plantColorRows[0].pct.toFixed(2)+'%':'식물 픽셀 없음';
+  $('plantColorBar').innerHTML=plantColorRows.map(r=>`<div class="seg" title="${r.hex} · 식물 영역 ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
+  $('plantColors').innerHTML=plantColorRows.map((r,i)=>`<div class="color"><div class="swatch" style="background:${r.hex}"></div><div><div class="hex">${i+1}. ${colorName(r.r,r.g,r.b)}</div><div class="rgb">${r.hex} · RGB(${r.r}, ${r.g}, ${r.b})</div><div class="rgb">사진 전체의 ${r.wholePct.toFixed(2)}%</div></div><div class="pct">${r.pct.toFixed(2)}%</div></div>`).join('');
+  $('canopyResults').classList.remove('hidden');
 }
 
 function downloadPlantColorsCSV(){
- const csv=[['순위','HEX','R','G','B','픽셀 수','식물 영역 내 비율(%)','사진 전체 대비 비율(%)'],...plantColorRows.map((r,i)=>[i+1,r.hex,r.r,r.g,r.b,r.n,r.pct.toFixed(4),r.wholePct.toFixed(4)])].map(row=>row.join(',')).join('\r\n');
- const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download=(filename||'palette')+'_식물영역_색상분석.csv';a.click();URL.revokeObjectURL(url);
+  const csv=[['순위','HEX','R','G','B','픽셀 수','식물 영역 내 비율(%)','사진 전체 대비 비율(%)'],...plantColorRows.map((r,i)=>[i+1,r.hex,r.r,r.g,r.b,r.n,r.pct.toFixed(4),r.wholePct.toFixed(4)])].map(row=>row.join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=(filename||'palette')+'_식물영역_색상분석.csv';a.click();URL.revokeObjectURL(url);
 }
 function downloadCSV(){
- const csv=[['순위','HEX','R','G','B','픽셀 수(대표 그룹)','비율(%)'],...rows.map((r,i)=>[i+1,r.hex,r.r,r.g,r.b,Math.round(r.n),r.pct.toFixed(4)])].map(row=>row.join(',')).join('\r\n');
- const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download=(filename||'palette')+'_색상분석.csv';a.click();URL.revokeObjectURL(url);
+  const csv=[['순위','HEX','R','G','B','픽셀 수(대표 그룹)','비율(%)'],...rows.map((r,i)=>[i+1,r.hex,r.r,r.g,r.b,Math.round(r.n),r.pct.toFixed(4)])].map(row=>row.join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=(filename||'palette')+'_색상분석.csv';a.click();URL.revokeObjectURL(url);
 }
 </script>
 </body>
