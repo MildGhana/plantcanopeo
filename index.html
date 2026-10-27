@@ -82,20 +82,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
     <div class="stat"><small>분석 대상 픽셀</small><strong id="allPixels">—</strong></div>
   </div>
 
+  <!-- 원본 사진을 왼쪽, 식물 영역 표시를 오른쪽에 배치 -->
   <div class="image-grid">
-    <div>
-      <h3>식물 영역 표시 (마스크)</h3>
-      <canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block"></canvas>
-      <p class="note" style="margin-top:8px">밝은 초록색으로 덧칠된 부분이 식물로 판별된 영역입니다.</p>
-    </div>
     <div>
       <h3>원본 사진</h3>
       <img id="canopyOriginal" alt="분석 원본" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block">
       <p class="note" style="margin-top:8px">업로드하거나 촬영한 원본 이미지입니다.</p>
     </div>
+    <div>
+      <h3>식물 영역 표시 (마스크)</h3>
+      <canvas id="maskCanvas" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block"></canvas>
+      <p class="note" style="margin-top:8px">밝은 초록색으로 덧칠된 부분이 식물로 판별된 영역입니다.</p>
+    </div>
   </div>
 
-  <!-- 민감도 조절 바 (20단계 확장) -->
+  <!-- 민감도 조절 바 (20단계) -->
   <div class="slider-container">
     <div class="slider-header">
       <span>식물 판별 민감도 조절 (20단계)</span>
@@ -275,7 +276,6 @@ function analyze(){
   $('groups').textContent=rows.length;
   $('bar').innerHTML=rows.map(r=>`<div class="seg" title="${r.hex} ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
   
-  // 코드 복사 버튼 제거된 전체 이미지 색상 분석 요약 카드 렌더링
   $('colors').innerHTML=rows.map((r,i)=>`
     <div class="color">
       <div class="swatch" style="background:${r.hex}"></div>
@@ -296,16 +296,15 @@ function analyzeCanopy(){
   const im=cx.getImageData(0,0,w,h),d=im.data;
   
   const sLv = parseInt($('sensitivityRange').value);
-  // 20단계 세부 파라미터 매핑 생성 (Lv.1 ~ Lv.20)
   const profiles = {};
   for(let i=1; i<=20; i++){
-    const t = (i-1)/19; // 0.0 to 1.0
+    const t = (i-1)/19;
     profiles[i] = {
-      hueMin: Math.round(48 - t * 44),    // 48 -> 4
-      hueMax: Math.round(120 + t * 59),   // 120 -> 179
-      minSat: 0.28 - t * 0.275,           // 0.28 -> 0.005
-      exg: 0.12 - t * 0.19,               // 0.12 -> -0.07
-      darkBoost: 0.02 + t * 0.70          // 0.02 -> 0.72
+      hueMin: Math.round(48 - t * 44),
+      hueMax: Math.round(120 + t * 59),
+      minSat: 0.28 - t * 0.275,
+      exg: 0.12 - t * 0.19,
+      darkBoost: 0.02 + t * 0.70
     };
   }
   const cfg = profiles[sLv] || profiles[10];
@@ -343,7 +342,6 @@ function analyzeCanopy(){
   $('plantDominantColor').textContent=plantColorRows.length?plantColorRows[0].hex+' · '+plantColorRows[0].pct.toFixed(2)+'%':'식물 픽셀 없음';
   $('plantColorBar').innerHTML=plantColorRows.map(r=>`<div class="seg" title="${r.hex} · 식물 영역 ${r.pct.toFixed(2)}%" style="width:${r.pct}%;background:${r.hex}"></div>`).join('');
   
-  // 식물 영역 색상 구성 카드 (코드 복사 버튼 없음)
   $('plantColors').innerHTML=plantColorRows.map((r,i)=>`
     <div class="color">
       <div class="swatch" style="background:${r.hex}"></div>
