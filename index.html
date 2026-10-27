@@ -11,16 +11,17 @@ h1{font-size:clamp(26px,4vw,38px);margin:0 0 8px}.muted{color:#687386;line-heigh
 .panel{background:white;border:1px solid #e2e7ef;border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 5px 20px #1a2b4a08}
 .drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;min-height:150px;padding:20px;border:2px dashed #b8c4d6;border-radius:14px;text-align:center;background:#fafcff;cursor:pointer}
 .drop:hover{border-color:#4263eb;background:#f5f7ff}.drop input{display:none}
-.controls{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:16px}
-.camera-wrap{position:relative;flex:0 1 220px;min-width:180px}.camera-inline{width:100%;margin-top:10px;padding:12px;border:1px solid #d9e2ee;border-radius:12px;background:#f8faff}
-.camera-inline video{display:block;width:100%;max-height:260px;background:#151922;border-radius:9px;object-fit:contain}
+.controls{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.camera-wrap{position:relative}
+.camera-inline{position:absolute;top:100%;left:0;z-index:10;width:300px;margin-top:10px;padding:12px;border:1px solid #d9e2ee;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,0.12)}
+.camera-inline video{display:block;width:100%;max-height:220px;background:#151922;border-radius:9px;object-fit:contain}
 button,select{border:1px solid #d5dce8;background:white;border-radius:10px;padding:10px 14px;font:inherit;cursor:pointer}
 button.primary{background:#315be8;color:white;border-color:#315be8}.camera-btn{background:#12805c;color:white;border-color:#12805c}
-.slider-container{flex:1 1 320px;background:#f8faff;border:1px solid #d9e2ee;border-radius:12px;padding:14px}
-.slider-header{display:flex;justify-content:between;align-items:center;margin-bottom:8px;font-weight:700;font-size:15px}
+.slider-container{background:#f8faff;border:1px solid #d9e2ee;border-radius:12px;padding:16px;margin-top:16px}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700;font-size:15px}
 .slider-header span{color:#315be8}
 input[type=range]{width:100%;height:10px;border-radius:5px;background:#d5dce8;outline:none;-webkit-appearance:none;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#315be8;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#315be8;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2)}
 .slider-labels{display:flex;justify-content:space-between;font-size:11px;color:#687386;margin-top:6px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 .stat{background:#f6f8fc;border-radius:12px;padding:14px}.stat small{display:block;color:#687386}.stat strong{font-size:22px}
@@ -31,6 +32,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .hex{font-weight:700;font-family:ui-monospace,monospace}.rgb{font-size:12px;color:#687386;margin-top:4px}.pct{font-size:18px;font-weight:700}
 .image-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 @media(max-width:768px){.image-grid{grid-template-columns:1fr}}
+.preview{max-width:100%;max-height:400px;object-fit:contain;display:block;margin:16px auto 0;border-radius:10px;border:1px solid #e2e7ef}
 .note{font-size:13px;color:#687386}.hidden{display:none}
 </style>
 </head>
@@ -49,6 +51,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <div class="muted">PNG, JPG, WebP, GIF 등 브라우저에서 열 수 있는 이미지</div>
 </label>
 
+<!-- 업로드 직후 바로 보이는 원본 사진 미리보기 -->
+<img id="preview" class="preview hidden" alt="선택한 이미지 미리보기">
+
 <div class="controls">
   <div class="camera-wrap">
     <button class="camera-btn" id="openCamera" type="button">📷 카메라로 촬영</button>
@@ -61,19 +66,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       </div>
       <p class="note" id="cameraStatus" style="margin-top:6px"></p>
     </section>
-  </div>
-
-  <div class="slider-container">
-    <div class="slider-header">
-      <span>식물 판별 민감도 조절</span>
-      <strong id="sensitivityLabel" style="color:#315be8">보통 (Lv.7)</strong>
-    </div>
-    <input id="sensitivityRange" type="range" min="1" max="13" step="1" value="7">
-    <div class="slider-labels">
-      <span>Lv.1 (극도로 엄격)</span>
-      <span>Lv.7 (보통)</span>
-      <span>Lv.13 (극한 초고감도)</span>
-    </div>
   </div>
 
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -104,6 +96,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <h3>원본 사진</h3>
       <img id="canopyOriginal" alt="분석 원본" style="width:100%;border-radius:12px;border:1px solid #e2e7ef;display:block">
       <p class="note" style="margin-top:8px">업로드하거나 촬영한 원본 이미지입니다.</p>
+    </div>
+  </div>
+
+  <!-- 민감도 조절 바를 영역 표시 및 원본 사진 바로 아래로 이동 -->
+  <div class="slider-container">
+    <div class="slider-header">
+      <span>식물 판별 민감도 조절</span>
+      <strong id="sensitivityLabel" style="color:#315be8">보통 (Lv.7)</strong>
+    </div>
+    <input id="sensitivityRange" type="range" min="1" max="13" step="1" value="7">
+    <div class="slider-labels">
+      <span>Lv.1 (극도로 엄격)</span>
+      <span>Lv.7 (보통)</span>
+      <span>Lv.13 (극한 초고감도)</span>
     </div>
   </div>
 
@@ -179,6 +185,8 @@ function takePhoto(){
     const img=new Image();
     img.onload=()=>{
       image=img;
+      $('preview').src=currentObjectUrl;
+      $('preview').classList.remove('hidden');
       $('canopyOriginal').src=currentObjectUrl;
       $('analyze').disabled=false;
       analyze();
@@ -232,6 +240,8 @@ function loadFile(file){
   const img=new Image();
   img.onload=()=>{
     image=img;
+    $('preview').src=currentObjectUrl;
+    $('preview').classList.remove('hidden');
     $('canopyOriginal').src=currentObjectUrl;
     $('analyze').disabled=false;
     analyze();
@@ -262,7 +272,7 @@ function colorName(r,g,b){
   } else {
     let name='Color';
     if(h<15||h>=345)name='Red'; else if(h<42)name='Orange'; else if(h<68)name='Yellow'; else if(h<105)name='Lime Green'; else if(h<145)name='Green'; else if(h<195)name='Cyan'; else if(h<255)name='Blue'; else if(h<295)name='Purple'; else name='Pink';
-    return `${v<0.42?'Dark':v<0.68?'Medium':'Light'} ${name} (S${satPct}%)`;
+    return `${v<0.42?'Dark':v<0.68?'Medium':'Light'} ${name}`;
   }
 }
 
@@ -299,7 +309,6 @@ function analyzeCanopy(){
   const im=cx.getImageData(0,0,w,h),d=im.data;
   
   const sLv = parseInt($('sensitivityRange').value);
-  // 13단계 세부 파라미터 매핑 (낮은 단계는 매우 엄격, 높은 단계는 극한 감도)
   const profiles = {
     1:  {hueMin:45, hueMax:125, minSat:0.25, exg:0.10,  darkBoost:0.05},
     2:  {hueMin:42, hueMax:130, minSat:0.21, exg:0.08,  darkBoost:0.10},
@@ -307,7 +316,7 @@ function analyzeCanopy(){
     4:  {hueMin:35, hueMax:140, minSat:0.14, exg:0.04,  darkBoost:0.20},
     5:  {hueMin:32, hueMax:145, minSat:0.11, exg:0.025, darkBoost:0.24},
     6:  {hueMin:30, hueMax:150, minSat:0.09, exg:0.015, darkBoost:0.28},
-    7:  {hueMin:28, hueMax:155, minSat:0.075,exg:0.005, darkBoost:0.32}, // 보통 표준
+    7:  {hueMin:28, hueMax:155, minSat:0.075,exg:0.005, darkBoost:0.32},
     8:  {hueMin:24, hueMax:160, minSat:0.06, exg:-0.005,darkBoost:0.38},
     9:  {hueMin:20, hueMax:164, minSat:0.045,exg:-0.015,darkBoost:0.44},
     10: {hueMin:16, hueMax:168, minSat:0.032,exg:-0.025,darkBoost:0.50},
