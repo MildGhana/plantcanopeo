@@ -30,7 +30,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .brush-btn.active{background:#315be8;color:white;border-color:#315be8}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 .stat{background:#f6f8fc;border-radius:12px;padding:14px}.stat small{display:block;color:#687386}.stat strong{font-size:22px}
-.bar{height:22px;display:flex;overflow:hidden;border-radius:8px;margin:14px 0 20px;background:#eee}.seg{height:100%;min-width:1px}
+.bar{height:22px;display:flex;overflow:hidden;border-radius:8px;margin:14px 0 20px;background:#eee}.seg{height:100%/*;min-width:1px*/}
 .colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .color{border:1px solid #e4e8ef;border-radius:12px;padding:12px;display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center}
 .swatch{height:48px;width:48px;border-radius:9px;border:1px solid #0001}
@@ -44,7 +44,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 <main class="app">
 <header class="head">
   <h1>식물 및 단풍 캐노피 피복률 분석기</h1>
-  <div class="muted">사진에서 식물 및 단풍 영역의 피복률을 계산하고 필요시 수동 정밀 편집 도구를 열어 수정할 수 있습니다.</div>
+  <div class="muted">사진에서 식물 및 단풍 영역의 피복률을 계산하고 수동 정밀 편집 도구 및 민감도 조절을 자유롭게 활용할 수 있습니다.</div>
 </header>
 
 <section class="panel">
@@ -85,6 +85,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
     <div class="stat"><small>피복률 추정치</small><strong id="canopyPct">—</strong></div>
     <div class="stat"><small>식별된 픽셀</small><strong id="plantPixels">—</strong></div>
     <div class="stat"><small>분석 대상 픽셀</small><strong id="allPixels">—</strong></div>
+    <div class="stat"><small>판별 설정</small><strong id="modeLabel" style="font-size:14px">—</strong></div>
   </div>
 
   <div class="image-grid">
@@ -137,6 +138,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
       <input type="checkbox" id="foliageMode">
       <span>🍁 단풍 모드 켜기 (갈색, 노란색, 붉은색 단풍 및 낙엽 포함)</span>
     </label>
+    <label class="foliage-toggle" style="border-top:1px dashed #d9e2ee;padding-top:10px">
+      <input type="checkbox" id="gviMode">
+      <span>🌿 녹시율(GVI) 표준 모드 적용 (Canopeo 기준 초기 분류식 사용. 단, 민감도 조절 및 수동 편집으로 언제든 가감 가능)</span>
+    </label>
   </div>
 
   <div style="margin-top:24px;border-top:1px solid #e2e7ef;padding-top:16px">
@@ -171,7 +176,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 <script>
 const $=id=>document.getElementById(id);
 let image=null, rows=[], plantColorRows=[], filename='palette', cameraStream=null, currentObjectUrl=null;
-let origImgData=null, currentMaskData=null, isDrawing=false, toolMode=null; // 기본적으로 도구 비활성화
+let origImgData=null, currentMaskData=null, isDrawing=false, toolMode=null;
 
 $('openCamera').addEventListener('click',openCamera);
 $('closeCamera').addEventListener('click',()=>closeCamera(true));
@@ -234,6 +239,7 @@ $('sensitivityRange').addEventListener('input', e=>{
   if(image) analyzeCanopy();
 });
 $('foliageMode').addEventListener('change',()=>{if(image)analyzeCanopy()});
+$('gviMode').addEventListener('change',()=>{if(image)analyzeCanopy()}); // 녹시율 체크 변경 시에도 민감도/수동 편집 막지 않고 즉시 재계산
 $('count').addEventListener('change',()=>{if(image)analyze()});
 $('download').addEventListener('click',downloadCSV);
 $('downloadPlantColors').addEventListener('click',downloadPlantColorsCSV);
@@ -248,7 +254,7 @@ $('toggleEditPanel').addEventListener('click', ()=>{
   } else {
     panel.classList.add('hidden');
     arrow.textContent = '▼ 펼치기';
-    toolMode = null; // 패널 접으면 도구 비활성화
+    toolMode = null;
     toolBtns.forEach(b => $(b.id).classList.remove('active'));
     $('maskCanvas').style.cursor = 'default';
   }
@@ -362,6 +368,8 @@ function analyzeCanopy(){
   
   const sLv = parseInt($('sensitivityRange').value);
   const isFoliage = $('foliageMode').checked;
+  const isGVI = $('gviMode').checked;
+  $('modeLabel').textContent = `${isGVI?'녹시율(GVI) + ':''}Lv.${sLv}${isFoliage?' · 단풍':''}`;
 
   const profiles = {};
   for(let i=1; i<=20; i++){
@@ -387,7 +395,15 @@ function analyzeCanopy(){
     const saturation=max===0?0:delta/max, exg=2*g-r-b, brightness=(r+g+b)/3;
     const darkFactor=Math.max(0.45,Math.min(1.15,brightness/0.42)), dimAdjustment=Math.max(0,0.30-brightness)*cfg.darkBoost;
     
+    // 민감도 기반 기본 판별
     let isTarget = hue>=cfg.hueMin && hue<=cfg.hueMax && saturation>=cfg.minSat && (exg>=(cfg.exg*darkFactor-dimAdjustment) || (g > r * 0.88 && g > b * 0.88));
+    
+    // 녹시율(GVI) 모드가 켜져 있으면 Canopeo 분류식 조건도 함께 포용
+    if(isGVI){
+      const R=d[i], Gc=d[i+1], B=d[i+2];
+      const isCanopeo = Gc>0 && (R/Gc)<0.95 && (B/Gc)<0.95 && (2*Gc-R-B)>20;
+      if(isCanopeo) isTarget = true;
+    }
     
     if(isFoliage){
       const isAutumnRedOrangeYellow = (hue <= 55 || hue >= 330) && saturation >= 0.18 && brightness >= 0.15 && brightness <= 0.90 && (r > g * 0.95);
@@ -461,7 +477,7 @@ function getMousePos(e){
 }
 
 function handleCanvasInteraction(pos){
-  if(!toolMode) return; // 도구가 선택되지 않았으면 무시
+  if(!toolMode) return;
   const w = maskEl.width, h = maskEl.height;
   const cx = Math.round(pos.x), cy = Math.round(pos.y);
   if(cx < 0 || cy < 0 || cx >= w || cy >= h) return;
